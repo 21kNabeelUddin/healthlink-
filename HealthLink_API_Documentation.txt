@@ -1,0 +1,1121 @@
+================================================================================
+                    HEALTHLINK+ API DOCUMENTATION
+                    Complete API Reference Guide
+================================================================================
+
+Base URL: http://localhost:8080
+
+================================================================================
+                            TABLE OF CONTENTS
+================================================================================
+
+1. AUTHENTICATION & USER MANAGEMENT
+   1.1 Patient Signup, Login & OTP Verification
+   1.2 Doctor Signup, Login & OTP Verification
+   1.3 Admin Signup, Login & OTP Verification
+
+2. PATIENT ENDPOINTS
+   2.1 View All Doctors
+   2.2 View Doctor by ID
+   2.3 Medical History Management (CRUD)
+   2.4 Appointment Booking & Management
+   2.5 Zoom Meeting Details
+
+3. DOCTOR ENDPOINTS
+   3.1 Clinic Management (CRUD)
+   3.2 Appointment Management
+   3.3 Zoom Meeting Details
+
+4. ADMIN ENDPOINTS
+   4.1 Admin Operations
+
+================================================================================
+                1. AUTHENTICATION & USER MANAGEMENT
+================================================================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1.1 PATIENT - SIGNUP, LOGIN & OTP VERIFICATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ STEP 1: PATIENT SIGNUP                                                      │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Endpoint: POST /api/patient/signup
+Headers: Content-Type: application/json
+
+Request Body:
+{
+  "email": "patient@example.com",
+  "password": "password123",
+  "firstName": "John",
+  "lastName": "Doe",
+  "phoneNumber": "1234567890",
+  "dateOfBirth": "1990-01-15T00:00:00",
+  "address": "123 Main Street, City, State, 12345"
+}
+
+Success Response (201 Created):
+{
+  "success": true,
+  "message": "Patient registered successfully. Please verify your email with OTP.",
+  "data": null
+}
+
+Error Response (400 Bad Request):
+{
+  "success": false,
+  "message": "Email already registered",
+  "data": null
+}
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ STEP 2: VERIFY OTP                                                          │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Endpoint: POST /api/patient/verify-otp
+Headers: Content-Type: application/json
+
+Request Body:
+{
+  "email": "patient@example.com",
+  "otp": "123456",
+  "userType": "PATIENT"
+}
+
+Success Response (200 OK):
+{
+  "success": true,
+  "message": "Email verified successfully",
+  "data": {
+    "id": 1,
+    "email": "patient@example.com",
+    "firstName": "John",
+    "lastName": "Doe",
+    "phoneNumber": "1234567890",
+    "userType": "PATIENT",
+    "isVerified": true,
+    "createdAt": "2025-11-17T18:30:00",
+    "dateOfBirth": "1990-01-15T00:00:00",
+    "address": "123 Main Street, City, State, 12345"
+  }
+}
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ STEP 3: PATIENT LOGIN                                                       │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Endpoint: POST /api/patient/login
+Headers: Content-Type: application/json
+
+Request Body:
+{
+  "email": "patient@example.com",
+  "password": "password123"
+}
+
+Success Response (200 OK):
+{
+  "success": true,
+  "message": "Login successful",
+  "data": {
+    "message": "Login successful",
+    "user": {
+      "id": 1,
+      "email": "patient@example.com",
+      "firstName": "John",
+      "lastName": "Doe",
+      "phoneNumber": "1234567890",
+      "userType": "PATIENT",
+      "isVerified": true,
+      "createdAt": "2025-11-17T18:30:00",
+      "dateOfBirth": "1990-01-15T00:00:00",
+      "address": "123 Main Street, City, State, 12345"
+    },
+    "token": ""
+  }
+}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1.2 DOCTOR - SIGNUP, LOGIN & OTP VERIFICATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ STEP 1: DOCTOR SIGNUP                                                       │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Endpoint: POST /api/doctor/signup
+Headers: Content-Type: application/json
+
+Request Body:
+{
+  "email": "doctor@example.com",
+  "password": "password123",
+  "firstName": "Dr. Sarah",
+  "lastName": "Smith",
+  "phoneNumber": "9876543210",
+  "specialization": "Cardiology",
+  "licenseNumber": "MD12345",
+  "yearsOfExperience": 10
+}
+
+Success Response (201 Created):
+{
+  "success": true,
+  "message": "Doctor registered successfully. Please verify your email with OTP.",
+  "data": null
+}
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ STEP 2: VERIFY OTP                                                          │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Endpoint: POST /api/doctor/verify-otp
+Headers: Content-Type: application/json
+
+Request Body:
+{
+  "email": "doctor@example.com",
+  "otp": "123456",
+  "userType": "DOCTOR"
+}
+
+Success Response (200 OK):
+{
+  "success": true,
+  "message": "Email verified successfully",
+  "data": {
+    "id": 1,
+    "email": "doctor@example.com",
+    "firstName": "Dr. Sarah",
+    "lastName": "Smith",
+    "phoneNumber": "9876543210",
+    "userType": "DOCTOR",
+    "isVerified": true,
+    "createdAt": "2025-11-17T18:30:00",
+    "specialization": "Cardiology",
+    "licenseNumber": "MD12345",
+    "yearsOfExperience": 10
+  }
+}
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ STEP 3: DOCTOR LOGIN                                                        │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Endpoint: POST /api/doctor/login
+Headers: Content-Type: application/json
+
+Request Body:
+{
+  "email": "doctor@example.com",
+  "password": "password123"
+}
+
+Success Response (200 OK):
+{
+  "success": true,
+  "message": "Login successful",
+  "data": {
+    "message": "Login successful",
+    "user": {
+      "id": 1,
+      "email": "doctor@example.com",
+      "firstName": "Dr. Sarah",
+      "lastName": "Smith",
+      "phoneNumber": "9876543210",
+      "userType": "DOCTOR",
+      "isVerified": true,
+      "createdAt": "2025-11-17T18:30:00",
+      "specialization": "Cardiology",
+      "licenseNumber": "MD12345",
+      "yearsOfExperience": 10
+    },
+    "token": ""
+  }
+}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1.3 ADMIN - SIGNUP, LOGIN & OTP VERIFICATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ STEP 1: ADMIN SIGNUP                                                        │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Endpoint: POST /api/admin/signup
+Headers: Content-Type: application/json
+
+Request Body:
+{
+  "email": "admin@example.com",
+  "password": "password123",
+  "firstName": "Admin",
+  "lastName": "User",
+  "phoneNumber": "5555555555"
+}
+
+Success Response (201 Created):
+{
+  "success": true,
+  "message": "Admin registered successfully. Please verify your email with OTP.",
+  "data": null
+}
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ STEP 2: VERIFY OTP                                                          │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Endpoint: POST /api/admin/verify-otp
+Headers: Content-Type: application/json
+
+Request Body:
+{
+  "email": "admin@example.com",
+  "otp": "123456",
+  "userType": "ADMIN"
+}
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ STEP 3: ADMIN LOGIN                                                         │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Endpoint: POST /api/admin/login
+Headers: Content-Type: application/json
+
+Request Body:
+{
+  "email": "admin@example.com",
+  "password": "password123"
+}
+
+================================================================================
+                        2. PATIENT ENDPOINTS
+================================================================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2.1 VIEW ALL DOCTORS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Endpoint: GET /api/patient/doctors
+Query Parameters (Optional): specialization
+
+Example URLs:
+- Get all doctors: GET http://localhost:8080/api/patient/doctors
+- Filter by specialization: GET http://localhost:8080/api/patient/doctors?specialization=Cardiology
+
+Success Response (200 OK):
+{
+  "success": true,
+  "message": "Doctors retrieved successfully",
+  "data": [
+    {
+      "id": 1,
+      "email": "doctor@example.com",
+      "firstName": "Dr. Sarah",
+      "lastName": "Smith",
+      "phoneNumber": "9876543210",
+      "userType": "DOCTOR",
+      "isVerified": true,
+      "createdAt": "2025-11-17T18:30:00",
+      "specialization": "Cardiology",
+      "licenseNumber": "MD12345",
+      "yearsOfExperience": 10
+    }
+  ]
+}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2.2 VIEW DOCTOR BY ID
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Endpoint: GET /api/patient/doctors/{doctorId}
+
+Example: GET http://localhost:8080/api/patient/doctors/1
+
+Success Response (200 OK):
+{
+  "success": true,
+  "message": "Doctor retrieved successfully",
+  "data": {
+    "id": 1,
+    "email": "doctor@example.com",
+    "firstName": "Dr. Sarah",
+    "lastName": "Smith",
+    "phoneNumber": "9876543210",
+    "userType": "DOCTOR",
+    "isVerified": true,
+    "createdAt": "2025-11-17T18:30:00",
+    "specialization": "Cardiology",
+    "licenseNumber": "MD12345",
+    "yearsOfExperience": 10
+  }
+}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2.3 MEDICAL HISTORY MANAGEMENT (CRUD)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ CREATE MEDICAL HISTORY                                                      │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Endpoint: POST /api/patient/{patientId}/medical-history
+Headers: Content-Type: application/json
+
+Request Body:
+{
+  "condition": "Hypertension",
+  "diagnosisDate": "2023-01-15",
+  "description": "High blood pressure diagnosed during routine checkup",
+  "treatment": "Lifestyle modifications and medication",
+  "medications": "Lisinopril 10mg daily",
+  "doctorName": "Dr. John Smith",
+  "hospitalName": "City General Hospital",
+  "status": "ACTIVE"
+}
+
+Status Values: ACTIVE, RESOLVED, CHRONIC, UNDER_TREATMENT
+
+Success Response (201 Created):
+{
+  "success": true,
+  "message": "Medical history created successfully",
+  "data": {
+    "id": 1,
+    "condition": "Hypertension",
+    "diagnosisDate": "2023-01-15",
+    "description": "High blood pressure diagnosed during routine checkup",
+    "treatment": "Lifestyle modifications and medication",
+    "medications": "Lisinopril 10mg daily",
+    "doctorName": "Dr. John Smith",
+    "hospitalName": "City General Hospital",
+    "status": "ACTIVE",
+    "patientId": 1,
+    "patientName": "John Doe",
+    "createdAt": "2025-11-18T01:30:00",
+    "updatedAt": "2025-11-18T01:30:00"
+  }
+}
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ GET ALL MEDICAL HISTORIES                                                    │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Endpoint: GET /api/patient/{patientId}/medical-history
+Query Parameters (Optional): status
+
+Example URLs:
+- Get all: GET http://localhost:8080/api/patient/1/medical-history
+- Filter by status: GET http://localhost:8080/api/patient/1/medical-history?status=ACTIVE
+
+Success Response (200 OK):
+{
+  "success": true,
+  "message": "Medical histories retrieved successfully",
+  "data": [
+    {
+      "id": 1,
+      "condition": "Hypertension",
+      "diagnosisDate": "2023-01-15",
+      "description": "High blood pressure",
+      "treatment": "Lifestyle modifications",
+      "medications": "Lisinopril 10mg daily",
+      "doctorName": "Dr. John Smith",
+      "hospitalName": "City General Hospital",
+      "status": "ACTIVE",
+      "patientId": 1,
+      "patientName": "John Doe",
+      "createdAt": "2025-11-18T01:30:00",
+      "updatedAt": "2025-11-18T01:30:00"
+    }
+  ]
+}
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ GET MEDICAL HISTORY BY ID                                                    │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Endpoint: GET /api/patient/{patientId}/medical-history/{historyId}
+
+Example: GET http://localhost:8080/api/patient/1/medical-history/1
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ UPDATE MEDICAL HISTORY                                                       │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Endpoint: PUT /api/patient/{patientId}/medical-history/{historyId}
+Headers: Content-Type: application/json
+
+Request Body:
+{
+  "condition": "Hypertension (Updated)",
+  "diagnosisDate": "2023-01-15",
+  "description": "Updated description",
+  "treatment": "Updated treatment plan",
+  "medications": "Lisinopril 20mg daily",
+  "doctorName": "Dr. Jane Doe",
+  "hospitalName": "Updated Hospital",
+  "status": "UNDER_TREATMENT"
+}
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ DELETE MEDICAL HISTORY                                                       │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Endpoint: DELETE /api/patient/{patientId}/medical-history/{historyId}
+
+Example: DELETE http://localhost:8080/api/patient/1/medical-history/1
+
+Success Response (200 OK):
+{
+  "success": true,
+  "message": "Medical history deleted successfully",
+  "data": null
+}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2.4 APPOINTMENT BOOKING & MANAGEMENT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ BOOK APPOINTMENT (ONLINE)                                                    │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Endpoint: POST /api/patient/{patientId}/appointments
+Headers: Content-Type: application/json
+
+Request Body (ONLINE):
+{
+  "appointmentDateTime": "2025-12-15T10:00:00",
+  "reason": "Regular checkup",
+  "notes": "Follow-up appointment",
+  "doctorId": 1,
+  "clinicId": 1,
+  "appointmentType": "ONLINE"
+}
+
+Success Response (201 Created):
+{
+  "success": true,
+  "message": "Appointment booked successfully. Waiting for doctor confirmation.",
+  "data": {
+    "id": 1,
+    "appointmentDateTime": "2025-12-15T10:00:00",
+    "reason": "Regular checkup",
+    "notes": "Follow-up appointment",
+    "status": "PENDING",
+    "appointmentType": "ONLINE",
+    "zoomMeetingId": "123456789",
+    "zoomMeetingUrl": "https://zoom.us/j/123456789",
+    "zoomMeetingPassword": "ABC123",
+    "zoomJoinUrl": "https://zoom.us/j/123456789?pwd=ABC123",
+    "patientId": 1,
+    "patientName": "John Doe",
+    "patientEmail": "patient@example.com",
+    "doctorId": 1,
+    "doctorName": "Dr. Sarah Smith",
+    "doctorSpecialization": "Cardiology",
+    "clinicId": 1,
+    "clinicName": "City Medical Center",
+    "clinicAddress": "123 Healthcare Avenue, New York, NY",
+    "createdAt": "2025-11-18T01:30:00",
+    "updatedAt": "2025-11-18T01:30:00"
+  }
+}
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ BOOK APPOINTMENT (ONSITE)                                                    │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Request Body (ONSITE):
+{
+  "appointmentDateTime": "2025-12-15T14:00:00",
+  "reason": "Physical examination",
+  "notes": "Need to visit clinic",
+  "doctorId": 1,
+  "clinicId": 1,
+  "appointmentType": "ONSITE"
+}
+
+Note: ONSITE appointments require a clinic. If clinicId is not provided, 
+system automatically uses doctor's first active clinic.
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ GET ALL PATIENT APPOINTMENTS                                                 │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Endpoint: GET /api/patient/{patientId}/appointments
+Query Parameters (Optional): status
+
+Example URLs:
+- Get all: GET http://localhost:8080/api/patient/1/appointments
+- Filter by status: GET http://localhost:8080/api/patient/1/appointments?status=PENDING
+
+Status Values: PENDING, CONFIRMED, CANCELLED, COMPLETED, REJECTED
+
+Success Response (200 OK):
+{
+  "success": true,
+  "message": "Appointments retrieved successfully",
+  "data": [
+    {
+      "id": 1,
+      "appointmentDateTime": "2025-12-15T10:00:00",
+      "reason": "Regular checkup",
+      "notes": "Follow-up appointment",
+      "status": "PENDING",
+      "appointmentType": "ONLINE",
+      "zoomMeetingId": "123456789",
+      "zoomMeetingUrl": "https://zoom.us/j/123456789",
+      "patientId": 1,
+      "patientName": "John Doe",
+      "doctorId": 1,
+      "doctorName": "Dr. Sarah Smith",
+      "doctorSpecialization": "Cardiology",
+      "clinicName": "City Medical Center",
+      "createdAt": "2025-11-18T01:30:00",
+      "updatedAt": "2025-11-18T01:30:00"
+    }
+  ]
+}
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ GET APPOINTMENT BY ID                                                        │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Endpoint: GET /api/patient/{patientId}/appointments/{appointmentId}
+
+Example: GET http://localhost:8080/api/patient/1/appointments/1
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ UPDATE APPOINTMENT                                                           │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Endpoint: PUT /api/patient/{patientId}/appointments/{appointmentId}
+Headers: Content-Type: application/json
+
+Note: Only PENDING appointments can be updated
+
+Request Body:
+{
+  "appointmentDateTime": "2025-12-16T14:00:00",
+  "reason": "Updated reason",
+  "notes": "Updated notes",
+  "doctorId": 1,
+  "clinicId": 1,
+  "appointmentType": "ONSITE"
+}
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ CANCEL APPOINTMENT                                                           │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Endpoint: POST /api/patient/{patientId}/appointments/{appointmentId}/cancel
+
+Example: POST http://localhost:8080/api/patient/1/appointments/1/cancel
+
+Success Response (200 OK):
+{
+  "success": true,
+  "message": "Appointment cancelled successfully",
+  "data": null
+}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2.5 ZOOM MEETING DETAILS (PATIENT)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Endpoint: GET /api/patient/{patientId}/appointments/{appointmentId}/zoom-meeting
+
+Example: GET http://localhost:8080/api/patient/1/appointments/1/zoom-meeting
+
+Success Response (200 OK):
+{
+  "success": true,
+  "message": "Zoom meeting details retrieved successfully",
+  "data": {
+    "meetingId": "123456789",
+    "meetingUrl": "https://zoom.us/j/123456789",
+    "password": "ABC123",
+    "joinUrl": "https://zoom.us/j/123456789?pwd=ABC123",
+    "appointmentDateTime": "2025-12-15T10:00:00",
+    "patientName": "John Doe",
+    "doctorName": "Dr. Sarah Smith"
+  }
+}
+
+Note: Only available for ONLINE appointments
+
+================================================================================
+                        3. DOCTOR ENDPOINTS
+================================================================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+3.1 CLINIC MANAGEMENT (CRUD)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ CREATE CLINIC                                                                │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Endpoint: POST /api/doctor/{doctorId}/clinic
+Headers: Content-Type: application/json
+
+Request Body:
+{
+  "name": "City Medical Center",
+  "address": "123 Healthcare Avenue",
+  "city": "New York",
+  "state": "NY",
+  "zipCode": "10001",
+  "phoneNumber": "1234567890",
+  "email": "clinic@citymedical.com",
+  "description": "Full-service medical clinic providing comprehensive healthcare services",
+  "openingTime": "09:00:00",
+  "closingTime": "17:00:00"
+}
+
+Success Response (201 Created):
+{
+  "success": true,
+  "message": "Clinic created successfully",
+  "data": {
+    "id": 1,
+    "name": "City Medical Center",
+    "address": "123 Healthcare Avenue",
+    "city": "New York",
+    "state": "NY",
+    "zipCode": "10001",
+    "phoneNumber": "1234567890",
+    "email": "clinic@citymedical.com",
+    "description": "Full-service medical clinic",
+    "openingTime": "09:00:00",
+    "closingTime": "17:00:00",
+    "isActive": true,
+    "doctorId": 1,
+    "doctorName": "Dr. Sarah Smith",
+    "createdAt": "2025-11-17T18:30:00",
+    "updatedAt": "2025-11-17T18:30:00"
+  }
+}
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ GET ALL CLINICS                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Endpoint: GET /api/doctor/{doctorId}/clinic
+Query Parameters (Optional): active
+
+Example URLs:
+- Get all: GET http://localhost:8080/api/doctor/1/clinic
+- Get active only: GET http://localhost:8080/api/doctor/1/clinic?active=true
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ GET CLINIC BY ID                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Endpoint: GET /api/doctor/{doctorId}/clinic/{clinicId}
+
+Example: GET http://localhost:8080/api/doctor/1/clinic/1
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ UPDATE CLINIC                                                                │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Endpoint: PUT /api/doctor/{doctorId}/clinic/{clinicId}
+Headers: Content-Type: application/json
+
+Request Body:
+{
+  "name": "Updated Clinic Name",
+  "address": "456 New Street",
+  "city": "Boston",
+  "state": "MA",
+  "zipCode": "02101",
+  "phoneNumber": "9876543210",
+  "email": "updated@clinic.com",
+  "description": "Updated description",
+  "openingTime": "08:00:00",
+  "closingTime": "18:00:00"
+}
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ DELETE CLINIC                                                                │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Endpoint: DELETE /api/doctor/{doctorId}/clinic/{clinicId}
+
+Example: DELETE http://localhost:8080/api/doctor/1/clinic/1
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ TOGGLE CLINIC STATUS (ACTIVATE/DEACTIVATE)                                   │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Endpoint: PATCH /api/doctor/{doctorId}/clinic/{clinicId}/toggle-status
+
+Example: PATCH http://localhost:8080/api/doctor/1/clinic/1/toggle-status
+
+Success Response (200 OK):
+{
+  "success": true,
+  "message": "Clinic deactivated successfully",
+  "data": {
+    "id": 1,
+    "isActive": false,
+    ...
+  }
+}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+3.2 APPOINTMENT MANAGEMENT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ GET ALL DOCTOR APPOINTMENTS                                                  │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Endpoint: GET /api/doctor/{doctorId}/appointments
+Query Parameters (Optional): status
+
+Example URLs:
+- Get all: GET http://localhost:8080/api/doctor/1/appointments
+- Filter by status: GET http://localhost:8080/api/doctor/1/appointments?status=PENDING
+
+Success Response (200 OK):
+{
+  "success": true,
+  "message": "Appointments retrieved successfully",
+  "data": [
+    {
+      "id": 1,
+      "appointmentDateTime": "2025-12-15T10:00:00",
+      "reason": "Regular checkup",
+      "status": "PENDING",
+      "appointmentType": "ONLINE",
+      "zoomMeetingId": "123456789",
+      "patientId": 1,
+      "patientName": "John Doe",
+      "patientEmail": "patient@example.com",
+      "doctorId": 1,
+      "doctorName": "Dr. Sarah Smith",
+      "clinicName": "City Medical Center",
+      ...
+    }
+  ]
+}
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ CONFIRM APPOINTMENT                                                          │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Endpoint: POST /api/doctor/{doctorId}/appointments/{appointmentId}/confirm
+
+Example: POST http://localhost:8080/api/doctor/1/appointments/1/confirm
+
+Success Response (200 OK):
+{
+  "success": true,
+  "message": "Appointment confirmed successfully",
+  "data": {
+    "id": 1,
+    "appointmentDateTime": "2025-12-15T10:00:00",
+    "status": "CONFIRMED",
+    "appointmentType": "ONLINE",
+    ...
+  }
+}
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ REJECT APPOINTMENT                                                           │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Endpoint: POST /api/doctor/{doctorId}/appointments/{appointmentId}/reject
+
+Example: POST http://localhost:8080/api/doctor/1/appointments/1/reject
+
+Success Response (200 OK):
+{
+  "success": true,
+  "message": "Appointment rejected successfully",
+  "data": {
+    "id": 1,
+    "status": "REJECTED",
+    ...
+  }
+}
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ COMPLETE APPOINTMENT                                                         │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Endpoint: POST /api/doctor/{doctorId}/appointments/{appointmentId}/complete
+
+Example: POST http://localhost:8080/api/doctor/1/appointments/1/complete
+
+Success Response (200 OK):
+{
+  "success": true,
+  "message": "Appointment marked as completed",
+  "data": {
+    "id": 1,
+    "status": "COMPLETED",
+    ...
+  }
+}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+3.3 ZOOM MEETING DETAILS (DOCTOR)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Endpoint: GET /api/doctor/{doctorId}/appointments/{appointmentId}/zoom-meeting
+
+Example: GET http://localhost:8080/api/doctor/1/appointments/1/zoom-meeting
+
+Success Response (200 OK):
+{
+  "success": true,
+  "message": "Zoom meeting details retrieved successfully",
+  "data": {
+    "meetingId": "123456789",
+    "meetingUrl": "https://zoom.us/j/123456789",
+    "password": "ABC123",
+    "joinUrl": "https://zoom.us/j/123456789?pwd=ABC123",
+    "appointmentDateTime": "2025-12-15T10:00:00",
+    "patientName": "John Doe",
+    "doctorName": "Dr. Sarah Smith"
+  }
+}
+
+Note: Only available for ONLINE appointments
+
+================================================================================
+                        4. ADMIN ENDPOINTS
+================================================================================
+
+Admin endpoints follow the same pattern as Patient and Doctor:
+- Signup: POST /api/admin/signup
+- Verify OTP: POST /api/admin/verify-otp
+- Login: POST /api/admin/login
+
+All use the same request/response format as Patient and Doctor endpoints.
+
+================================================================================
+                        COMPLETE WORKFLOW EXAMPLES
+================================================================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+WORKFLOW 1: PATIENT BOOKS ONLINE APPOINTMENT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Step 1: Patient Signup
+POST /api/patient/signup
+{
+  "email": "patient@example.com",
+  "password": "password123",
+  "firstName": "John",
+  "lastName": "Doe",
+  "phoneNumber": "1234567890",
+  "dateOfBirth": "1990-01-15T00:00:00",
+  "address": "123 Main Street, City, State, 12345"
+}
+
+Step 2: Verify OTP (check email for OTP)
+POST /api/patient/verify-otp
+{
+  "email": "patient@example.com",
+  "otp": "123456",
+  "userType": "PATIENT"
+}
+
+Step 3: Patient Login
+POST /api/patient/login
+{
+  "email": "patient@example.com",
+  "password": "password123"
+}
+
+Step 4: View Available Doctors
+GET /api/patient/doctors?specialization=Cardiology
+
+Step 5: Book ONLINE Appointment
+POST /api/patient/1/appointments
+{
+  "appointmentDateTime": "2025-12-15T10:00:00",
+  "reason": "Regular checkup",
+  "notes": "Follow-up appointment",
+  "doctorId": 1,
+  "appointmentType": "ONLINE"
+}
+
+Response includes Zoom meeting details automatically!
+
+Step 6: Get Zoom Meeting Details (when appointment time arrives)
+GET /api/patient/1/appointments/1/zoom-meeting
+
+Step 7: Join Zoom Meeting using the joinUrl from response
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+WORKFLOW 2: DOCTOR MANAGES CLINIC AND APPOINTMENTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Step 1: Doctor Signup
+POST /api/doctor/signup
+{
+  "email": "doctor@example.com",
+  "password": "password123",
+  "firstName": "Dr. Sarah",
+  "lastName": "Smith",
+  "phoneNumber": "9876543210",
+  "specialization": "Cardiology",
+  "licenseNumber": "MD12345",
+  "yearsOfExperience": 10
+}
+
+Step 2: Verify OTP
+POST /api/doctor/verify-otp
+{
+  "email": "doctor@example.com",
+  "otp": "123456",
+  "userType": "DOCTOR"
+}
+
+Step 3: Doctor Login
+POST /api/doctor/login
+{
+  "email": "doctor@example.com",
+  "password": "password123"
+}
+
+Step 4: Create Clinic
+POST /api/doctor/1/clinic
+{
+  "name": "City Medical Center",
+  "address": "123 Healthcare Avenue",
+  "city": "New York",
+  "state": "NY",
+  "zipCode": "10001",
+  "phoneNumber": "1234567890",
+  "email": "clinic@citymedical.com",
+  "description": "Full-service medical clinic",
+  "openingTime": "09:00:00",
+  "closingTime": "17:00:00"
+}
+
+Step 5: View Pending Appointments
+GET /api/doctor/1/appointments?status=PENDING
+
+Step 6: Confirm Appointment
+POST /api/doctor/1/appointments/1/confirm
+
+Step 7: Get Zoom Meeting Details (for ONLINE appointments)
+GET /api/doctor/1/appointments/1/zoom-meeting
+
+Step 8: Complete Appointment (after consultation)
+POST /api/doctor/1/appointments/1/complete
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+WORKFLOW 3: PATIENT MANAGES MEDICAL HISTORY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Step 1: Create Medical History
+POST /api/patient/1/medical-history
+{
+  "condition": "Hypertension",
+  "diagnosisDate": "2023-01-15",
+  "description": "High blood pressure",
+  "treatment": "Lifestyle modifications",
+  "medications": "Lisinopril 10mg daily",
+  "doctorName": "Dr. John Smith",
+  "hospitalName": "City General Hospital",
+  "status": "ACTIVE"
+}
+
+Step 2: View All Medical Histories
+GET /api/patient/1/medical-history
+
+Step 3: View by Status
+GET /api/patient/1/medical-history?status=ACTIVE
+
+Step 4: Update Medical History
+PUT /api/patient/1/medical-history/1
+{
+  "condition": "Hypertension",
+  "diagnosisDate": "2023-01-15",
+  "description": "Updated description",
+  "treatment": "Updated treatment",
+  "medications": "Lisinopril 20mg daily",
+  "doctorName": "Dr. Jane Doe",
+  "hospitalName": "Updated Hospital",
+  "status": "UNDER_TREATMENT"
+}
+
+Step 5: Delete Medical History (if needed)
+DELETE /api/patient/1/medical-history/1
+
+================================================================================
+                        IMPORTANT NOTES & VALIDATION
+================================================================================
+
+VALIDATION RULES:
+-----------------
+1. Email: Must be valid email format
+2. Password: Minimum 8 characters
+3. Phone Number: Exactly 10 digits (no spaces or dashes)
+4. Date Format: YYYY-MM-DD (e.g., "1990-01-15")
+5. DateTime Format: ISO 8601 (e.g., "2025-12-15T10:00:00")
+6. Time Format: HH:mm:ss (e.g., "09:00:00")
+7. Zip Code: 5 digits or 5+4 format (e.g., "10001" or "10001-1234")
+
+APPOINTMENT TYPE:
+-----------------
+- ONLINE: Virtual appointment via Zoom
+- ONSITE: Physical visit to clinic
+
+APPOINTMENT STATUS:
+-------------------
+- PENDING: Waiting for doctor confirmation
+- CONFIRMED: Doctor has confirmed
+- CANCELLED: Cancelled by patient or doctor
+- COMPLETED: Appointment completed
+- REJECTED: Doctor rejected the appointment
+
+MEDICAL HISTORY STATUS:
+-----------------------
+- ACTIVE: Currently active condition
+- RESOLVED: Condition has been resolved/cured
+- CHRONIC: Long-term chronic condition
+- UNDER_TREATMENT: Currently undergoing treatment
+
+ZOOM MEETING:
+-------------
+- Automatically created for ONLINE appointments
+- Meeting details included in appointment response
+- Both patient and doctor can access meeting details
+- Use joinUrl to join the meeting
+
+SECURITY:
+---------
+- Only verified users can access protected endpoints
+- Patients can only access their own data
+- Doctors can only access their own clinics and appointments
+- OTP verification required for all signups
+
+ERROR HANDLING:
+---------------
+All endpoints return consistent error format:
+{
+  "success": false,
+  "message": "Error message here",
+  "data": null
+}
+
+================================================================================
+                        END OF DOCUMENTATION
+================================================================================
+
+For questions or support, please refer to the application logs or contact 
+the development team.
+
+Last Updated: 2025-11-18
+

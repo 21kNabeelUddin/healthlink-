@@ -1,25 +1,16 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import {
-  LayoutDashboard,
-  Calendar,
-  FileText,
-  Settings,
-  Bell,
-  MessageSquare,
-  Sparkles,
-  Send,
-  Loader2,
-} from 'lucide-react';
+import { Sparkles, Send, Loader2, Paperclip, X as CloseIcon } from 'lucide-react';
 
 import { useAuth } from '@/contexts/AuthContext';
 import { TopNav } from '@/marketing/layout/TopNav';
 import { Sidebar } from '@/marketing/layout/Sidebar';
 import { Button } from '@/marketing/ui/button';
 import { Badge } from '@/marketing/ui/badge';
+import { patientSidebarItems } from '@/app/patient/sidebar-items';
 
 type ChatRole = 'user' | 'assistant';
 
@@ -28,6 +19,7 @@ interface ChatMessage {
   role: ChatRole;
   content: string;
   timestamp: number;
+  attachments?: AttachmentPreview[];
 }
 
 const quickPrompts = [
@@ -38,6 +30,15 @@ const quickPrompts = [
 ];
 
 const createId = () => crypto.randomUUID?.() ?? Math.random().toString(36).slice(2);
+
+type AttachmentPreview = {
+  id: string;
+  name: string;
+  type: string;
+  size: number;
+  url: string;
+  file: File;
+};
 
 export default function PatientChatbotPage() {
   const router = useRouter();
@@ -55,6 +56,8 @@ export default function PatientChatbotPage() {
   const [isThinking, setIsThinking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
+  const [attachments, setAttachments] = useState<AttachmentPreview[]>([]);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -66,40 +69,84 @@ export default function PatientChatbotPage() {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isThinking]);
 
-  const sidebarItems = useMemo(
-    () => [
-      { icon: LayoutDashboard, label: 'Dashboard', href: '/patient/dashboard' },
-      { icon: Calendar, label: 'Appointments', href: '/patient/appointments' },
-      { icon: FileText, label: 'Medical History', href: '/patient/medical-history' },
-      { icon: MessageSquare, label: 'AI Chatbot', href: '/patient/chatbot' },
-      { icon: Bell, label: 'Notifications', href: '/patient/dashboard#notifications' },
-      { icon: Settings, label: 'Settings', href: '/patient/profile' },
-    ],
-    [],
-  );
-
   const handleLogout = () => {
     logout();
     router.replace('/');
   };
 
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files) return;
+    const newAttachments: AttachmentPreview[] = [];
+    Array.from(files).forEach((file) => {
+      newAttachments.push({
+        id: createId(),
+        name: file.name,
+        type: file.type,
+        size: file.size,
+        url: URL.createObjectURL(file),
+        file,
+      });
+    });
+    setAttachments((prev) => [...prev, ...newAttachments]);
+    event.target.value = '';
+  };
+
+  const removeAttachment = (id: string) => {
+    setAttachments((prev) => {
+      const item = prev.find((file) => file.id === id);
+      if (item) {
+        URL.revokeObjectURL(item.url);
+      }
+      return prev.filter((file) => file.id !== id);
+    });
+  };
+
+  const fileToBase64 = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result as string;
+        const base64 = result.split(',')[1] ?? '';
+        resolve(base64);
+      };
+      reader.onerror = (err) => reject(err);
+      reader.readAsDataURL(file);
+    });
+
   const sendMessage = async (prompt?: string) => {
     const content = (prompt ?? input).trim();
-    if (!content || isThinking) return;
+    if ((!content && attachments.length === 0) || isThinking) return;
+
+    const attachmentFiles: AttachmentPreview[] = attachments;
 
     const userMessage: ChatMessage = {
       id: createId(),
       role: 'user',
       content,
       timestamp: Date.now(),
+      attachments: attachmentFiles,
     };
 
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
     setError(null);
     setIsThinking(true);
+    attachmentFiles.forEach((file) => URL.revokeObjectURL(file.url));
+    setAttachments([]);
 
     try {
+      const attachmentPayload =
+        attachmentFiles.length > 0
+          ? await Promise.all(
+              attachmentFiles.map(async (preview) => ({
+                name: preview.name,
+                mimeType: preview.type || 'application/octet-stream',
+                data: await fileToBase64(preview.file),
+              })),
+            )
+          : [];
+
       const response = await fetch('/api/chatbot', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -108,14 +155,18 @@ export default function PatientChatbotPage() {
             role: message.role,
             content: message.content,
           })),
+          attachments: attachmentPayload,
         }),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        throw new Error('Failed to reach the AI assistant.');
+        // If the API returned an error but with a reply message, show that
+        const errorMessage = data.reply || data.error || 'Failed to reach the AI assistant.';
+        throw new Error(errorMessage);
       }
 
-      const data = await response.json();
       const assistantMessage: ChatMessage = {
         id: createId(),
         role: 'assistant',
@@ -125,15 +176,17 @@ export default function PatientChatbotPage() {
 
       setMessages((prev) => [...prev, assistantMessage]);
     } catch (err: any) {
-      console.error(err);
-      setError(err.message || 'Something went wrong.');
+      console.error('Chatbot error:', err);
+      const errorMessage = err.message || 'Something went wrong.';
+      setError(errorMessage);
       setMessages((prev) => [
         ...prev,
         {
           id: createId(),
           role: 'assistant',
-          content:
-            'I ran into an issue while thinking. Please try again, or check your network connection.',
+          content: errorMessage.includes('API key') || errorMessage.includes('configured')
+            ? errorMessage
+            : 'I ran into an issue while thinking. Please try again, or check your network connection.',
           timestamp: Date.now(),
         },
       ]);
@@ -166,7 +219,7 @@ export default function PatientChatbotPage() {
       />
 
       <div className="flex">
-        <Sidebar items={sidebarItems} currentPath="/patient/chatbot" />
+        <Sidebar items={patientSidebarItems} currentPath="/patient/chatbot" />
 
         <main className="flex-1 p-4 sm:p-6 lg:p-8">
           <div className="max-w-5xl mx-auto space-y-6">
@@ -196,13 +249,37 @@ export default function PatientChatbotPage() {
                       className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                     >
                       <div
-                        className={`max-w-xl rounded-2xl px-4 py-3 text-sm leading-relaxed shadow ${
+                        className={`max-w-xl rounded-2xl px-4 py-3 text-sm leading-relaxed shadow space-y-2 ${
                           message.role === 'user'
                             ? 'bg-gradient-to-br from-teal-500 to-violet-600 text-white'
                             : 'bg-white border border-slate-100 text-slate-800'
                         }`}
                       >
-                        {message.content}
+                        {message.content && <p>{message.content}</p>}
+                        {message.attachments && message.attachments.length > 0 && (
+                          <div className="space-y-2">
+                            {message.attachments.map((file) => (
+                              <div
+                                key={file.id}
+                                className={`rounded-xl border ${
+                                  message.role === 'user'
+                                    ? 'border-white/30 bg-white/10'
+                                    : 'border-slate-200 bg-slate-50'
+                                } p-2`}
+                              >
+                                <p className="text-xs font-medium mb-1 flex items-center gap-2">
+                                  <Paperclip className="w-3 h-3" />
+                                  {file.name}
+                                </p>
+                                <img
+                                  src={file.url}
+                                  alt={file.name}
+                                  className="max-h-48 rounded-lg w-auto object-cover"
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -218,7 +295,28 @@ export default function PatientChatbotPage() {
 
                 <div className="border-t border-slate-100 bg-white/80 backdrop-blur rounded-b-3xl px-4 py-4">
                   {error && <p className="text-sm text-red-500 mb-2">{error}</p>}
-                  <div className="flex gap-3">
+                  <div className="flex flex-col gap-3">
+                    {attachments.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {attachments.map((file) => (
+                          <div
+                            key={file.id}
+                            className="flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-xs text-slate-600"
+                          >
+                            <Paperclip className="w-3 h-3" />
+                            <span className="truncate max-w-[120px]">{file.name}</span>
+                            <button
+                              className="text-slate-400 hover:text-slate-600"
+                              onClick={() => removeAttachment(file.id)}
+                              type="button"
+                            >
+                              <CloseIcon className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <div className="flex gap-3">
                     <textarea
                       value={input}
                       onChange={(e) => setInput(e.target.value)}
@@ -227,13 +325,36 @@ export default function PatientChatbotPage() {
                       className="flex-1 resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-teal-500"
                       rows={2}
                     />
-                    <Button
-                      onClick={() => sendMessage()}
-                      disabled={isThinking || !input.trim()}
-                      className="h-14 w-14 rounded-2xl bg-gradient-to-br from-teal-500 to-violet-600 hover:from-teal-600 hover:to-violet-700"
-                    >
-                      {isThinking ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                    </Button>
+                      <div className="flex flex-col gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="h-12 w-12 rounded-2xl border-slate-200 text-slate-600"
+                          onClick={() => fileInputRef.current?.click()}
+                        >
+                          <Paperclip className="w-4 h-4" />
+                        </Button>
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          className="hidden"
+                          onChange={handleFileChange}
+                        />
+                        <Button
+                          onClick={() => sendMessage()}
+                          disabled={isThinking || (!input.trim() && attachments.length === 0)}
+                          className="h-12 w-12 rounded-2xl bg-gradient-to-br from-teal-500 to-violet-600 hover:from-teal-600 hover:to-violet-700"
+                        >
+                          {isThinking ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Send className="w-4 h-4" />
+                          )}
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>

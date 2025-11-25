@@ -128,6 +128,24 @@ public class PatientService {
         return ApiResponseDTO.success("Login successful", loginResponse);
     }
 
+    @Transactional
+    public ApiResponseDTO<UserResponseDTO> updateProfile(Long patientId, PatientProfileUpdateDTO updateRequest) {
+        Patient patient = patientRepository.findById(patientId)
+                .orElseThrow(() -> new RuntimeException("Patient not found"));
+
+        if (!patient.getPhoneNumber().equals(updateRequest.getPhoneNumber())
+                && patientRepository.existsByPhoneNumber(updateRequest.getPhoneNumber())) {
+            return ApiResponseDTO.error("Phone number already registered");
+        }
+
+        patient.setPhoneNumber(updateRequest.getPhoneNumber());
+        patient.setAddress(updateRequest.getAddress());
+
+        Patient updatedPatient = patientRepository.save(patient);
+        UserResponseDTO response = mapToUserResponseDTO(updatedPatient);
+        return ApiResponseDTO.success("Profile updated successfully", response);
+    }
+
     private UserResponseDTO mapToUserResponseDTO(Patient patient) {
         UserResponseDTO dto = new UserResponseDTO();
         dto.setId(patient.getId());

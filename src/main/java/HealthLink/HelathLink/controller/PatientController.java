@@ -53,5 +53,14 @@ public class PatientController {
         HttpStatus status = response.isSuccess() ? HttpStatus.OK : HttpStatus.NOT_FOUND;
         return ResponseEntity.status(status).body(response);
     }
+
+    @PutMapping("/{patientId}/profile")
+    public ResponseEntity<ApiResponseDTO<UserResponseDTO>> updateProfile(
+            @PathVariable Long patientId,
+            @Valid @RequestBody PatientProfileUpdateDTO updateRequest) {
+        ApiResponseDTO<UserResponseDTO> response = patientService.updateProfile(patientId, updateRequest);
+        HttpStatus status = response.isSuccess() ? HttpStatus.OK : HttpStatus.BAD_REQUEST;
+        return ResponseEntity.status(status).body(response);
+    }
 }
 

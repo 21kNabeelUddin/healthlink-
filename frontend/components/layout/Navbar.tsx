@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import Button from '@/components/ui/Button';
+import { Activity } from 'lucide-react';
 
 export default function Navbar() {
   const { user, logout, isAuthenticated } = useAuth();
@@ -32,8 +33,14 @@ export default function Navbar() {
     <nav className="bg-white shadow-md">
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center h-16">
-          <Link href={isAuthenticated ? getDashboardPath() : '/'} className="text-2xl font-bold text-primary-600">
-            HealthLink+
+          <Link
+            href={isAuthenticated ? getDashboardPath() : '/'}
+            className="flex items-center gap-3 text-2xl font-bold text-primary-600"
+          >
+            <span className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-violet-600 flex items-center justify-center">
+              <Activity className="w-5 h-5 text-white" />
+            </span>
+            <span>HealthLink+</span>
           </Link>
 
           <div className="flex items-center gap-4">

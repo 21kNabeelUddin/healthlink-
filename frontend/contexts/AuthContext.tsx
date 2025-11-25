@@ -9,6 +9,7 @@ interface AuthContextType {
   token: string | null;
   login: (user: User, token: string) => void;
   logout: () => void;
+  updateUser: (user: User) => void;
   isAuthenticated: boolean;
   isLoading: boolean;
 }
@@ -43,6 +44,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     clearAuth();
   };
 
+  const updateUser = (updatedUser: User) => {
+    setUser(updatedUser);
+    setStoredUser(updatedUser);
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -50,6 +56,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         token,
         login,
         logout,
+        updateUser,
         isAuthenticated: !!user && !!token,
         isLoading,
       }}

@@ -14,6 +14,7 @@ import type {
   Clinic,
   ClinicRequest,
   ZoomMeeting,
+  PatientProfileUpdateRequest,
 } from '@/types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
@@ -121,6 +122,14 @@ export const patientApi = {
 
   getZoomMeeting: async (patientId: number, appointmentId: number): Promise<ApiResponse<ZoomMeeting>> => {
     const response = await api.get(`/api/patient/${patientId}/appointments/${appointmentId}/zoom-meeting`);
+    return response.data;
+  },
+
+  updateProfile: async (
+    patientId: number,
+    data: PatientProfileUpdateRequest,
+  ): Promise<ApiResponse<User>> => {
+    const response = await api.put(`/api/patient/${patientId}/profile`, data);
     return response.data;
   },
 };

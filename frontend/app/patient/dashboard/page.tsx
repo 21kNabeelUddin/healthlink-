@@ -5,18 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import { toast } from 'react-hot-toast';
-import {
-  LayoutDashboard,
-  Calendar,
-  FileText,
-  Settings,
-  Bell,
-  Plus,
-  Video,
-  Clock,
-  CheckCircle2,
-  MessageSquare,
-} from 'lucide-react';
+import { Calendar, FileText, Bell, Plus, Video, Clock, CheckCircle2 } from 'lucide-react';
 
 import { useAuth } from '@/contexts/AuthContext';
 import { patientApi } from '@/lib/api';
@@ -27,6 +16,7 @@ import { Sidebar } from '@/marketing/layout/Sidebar';
 import { StatsCard } from '@/marketing/dashboard/StatsCard';
 import { AppointmentCard } from '@/marketing/dashboard/AppointmentCard';
 import { Button } from '@/marketing/ui/button';
+import { patientSidebarItems } from '@/app/patient/sidebar-items';
 
 export default function PatientDashboard() {
   const router = useRouter();
@@ -64,15 +54,6 @@ export default function PatientDashboard() {
       setIsLoading(false);
     }
   };
-
-  const sidebarItems = [
-    { icon: LayoutDashboard, label: 'Dashboard', href: '/patient/dashboard' },
-    { icon: Calendar, label: 'Appointments', href: '/patient/appointments' },
-    { icon: FileText, label: 'Medical History', href: '/patient/medical-history' },
-    { icon: MessageSquare, label: 'AI Chatbot', href: '/patient/chatbot' },
-    { icon: Bell, label: 'Notifications', href: '/patient/dashboard#notifications' },
-    { icon: Settings, label: 'Settings', href: '/patient/profile' },
-  ];
 
   const upcomingAppointments = useMemo(
     () =>
@@ -130,7 +111,7 @@ export default function PatientDashboard() {
       />
 
       <div className="flex">
-        <Sidebar items={sidebarItems} currentPath="/patient/dashboard" />
+        <Sidebar items={patientSidebarItems} currentPath="/patient/dashboard" />
 
         <main className="flex-1 p-4 sm:p-6 lg:p-8">
           <div className="max-w-7xl mx-auto space-y-8">

@@ -164,6 +164,11 @@ export interface ClinicRequest {
   closingTime: string;
 }
 
+export interface PatientProfileUpdateRequest {
+  phoneNumber: string;
+  address: string;
+}
+
 // Zoom Meeting
 export interface ZoomMeeting {
   meetingId: string;

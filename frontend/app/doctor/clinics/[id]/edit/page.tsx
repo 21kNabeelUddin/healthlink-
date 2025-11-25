@@ -128,7 +128,7 @@ export default function EditClinicPage() {
               placeholder="1234567890"
               {...register('phoneNumber', { 
                 required: 'Phone number is required',
-                pattern: { value: /^\d{10}$/, message: 'Phone number must be 10 digits' }
+                pattern: { value: /^\d{11}$/, message: 'Phone number must be 11 digits' }
               })}
               error={errors.phoneNumber?.message}
             />

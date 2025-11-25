@@ -45,7 +45,7 @@ export default function ClinicsPage() {
     try {
       const response = await doctorApi.toggleClinicStatus(user.id, clinicId);
       if (response.success) {
-        toast.success('Clinic status updated');
+        toast.success(response.message || 'Clinic status updated');
         loadClinics();
       } else {
         toast.error(response.message);

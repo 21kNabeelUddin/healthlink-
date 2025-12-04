@@ -27,8 +27,8 @@ public class FacilityService {
                 .orElseThrow(() -> new IllegalArgumentException("Organization not found"));
         var f = new Facility();
         f.setOrganization(org);
-        f.setName(request.getName());
-        f.setAddress(request.getAddress());
+        mapRequestToEntity(request, f);
+        f.setActive(true);
         return toDto(facilityRepository.save(f));
     }
 
@@ -37,8 +37,8 @@ public class FacilityService {
                 .orElseThrow(() -> new IllegalArgumentException("Doctor not found"));
         var f = new Facility();
         f.setDoctorOwner(doc);
-        f.setName(request.getName());
-        f.setAddress(request.getAddress());
+        mapRequestToEntity(request, f);
+        f.setActive(true);
         return toDto(facilityRepository.save(f));
     }
 
@@ -52,8 +52,7 @@ public class FacilityService {
 
     public FacilityResponse update(UUID id, FacilityRequest request) {
         Facility f = facilityRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Facility not found"));
-        f.setName(request.getName());
-        f.setAddress(request.getAddress());
+        mapRequestToEntity(request, f);
         return toDto(facilityRepository.save(f));
     }
 
@@ -63,14 +62,47 @@ public class FacilityService {
         facilityRepository.save(f);
     }
 
+    public void activate(UUID id) {
+        Facility f = facilityRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Facility not found"));
+        f.setActive(true);
+        facilityRepository.save(f);
+    }
+
     private FacilityResponse toDto(Facility f) {
         return FacilityResponse.builder()
                 .id(f.getId())
                 .name(f.getName())
                 .address(f.getAddress())
+                .city(f.getCity())
+                .state(f.getState())
+                .zipCode(f.getZipCode())
+                .phoneNumber(f.getPhoneNumber())
+                .email(f.getEmail())
+                .description(f.getDescription())
+                .openingTime(f.getOpeningTime())
+                .closingTime(f.getClosingTime())
+                .latitude(f.getLatitude())
+                .longitude(f.getLongitude())
+                .consultationFee(f.getConsultationFee())
                 .active(f.isActive())
                 .organizationId(f.getOrganization() != null ? f.getOrganization().getId() : null)
                 .doctorOwnerId(f.getDoctorOwner() != null ? f.getDoctorOwner().getId() : null)
                 .build();
+    }
+
+    private void mapRequestToEntity(FacilityRequest request, Facility facility) {
+        facility.setName(request.getName());
+        facility.setAddress(request.getAddress());
+        facility.setCity(request.getCity());
+        facility.setState(request.getState());
+        facility.setZipCode(request.getZipCode());
+        facility.setPhoneNumber(request.getPhoneNumber());
+        facility.setEmail(request.getEmail());
+        facility.setDescription(request.getDescription());
+        facility.setOpeningTime(request.getOpeningTime());
+        facility.setClosingTime(request.getClosingTime());
+        facility.setLatitude(request.getLatitude());
+        facility.setLongitude(request.getLongitude());
+        facility.setConsultationFee(request.getConsultationFee());
     }
 }

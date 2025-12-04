@@ -56,6 +56,10 @@ export default function DoctorLogin() {
           <Link href="/auth/doctor/signup" className="text-teal-600 font-semibold hover:underline">
             Sign up
           </Link>
+          <span className="mx-2 text-gray-400">|</span>
+          <Link href="/auth/doctor/forgot-password" className="text-sm text-teal-600 font-semibold hover:underline">
+            Forgot password?
+          </Link>
         </>
       }
     >

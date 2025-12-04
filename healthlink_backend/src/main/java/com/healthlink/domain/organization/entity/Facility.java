@@ -7,6 +7,8 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.math.BigDecimal;
+
 @Entity
 @Table(name = "facilities", indexes = {
         @Index(name = "idx_facility_org", columnList = "organization_id"),
@@ -29,6 +31,39 @@ public class Facility extends BaseEntity {
 
     @Column(name = "address", length = 500)
     private String address;
+
+    @Column(name = "city", length = 120)
+    private String city;
+
+    @Column(name = "state", length = 120)
+    private String state;
+
+    @Column(name = "zip_code", length = 20)
+    private String zipCode;
+
+    @Column(name = "phone_number", length = 25)
+    private String phoneNumber;
+
+    @Column(name = "email", length = 200)
+    private String email;
+
+    @Column(name = "description", columnDefinition = "TEXT")
+    private String description;
+
+    @Column(name = "opening_time", length = 10)
+    private String openingTime;
+
+    @Column(name = "closing_time", length = 10)
+    private String closingTime;
+
+    @Column(name = "latitude")
+    private Double latitude;
+
+    @Column(name = "longitude")
+    private Double longitude;
+
+    @Column(name = "consultation_fee", precision = 10, scale = 2)
+    private BigDecimal consultationFee;
 
     @Column(name = "active", nullable = false)
     private boolean active = true;

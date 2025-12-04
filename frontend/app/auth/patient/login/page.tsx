@@ -56,6 +56,10 @@ export default function PatientLogin() {
           <Link href="/auth/patient/signup" className="text-teal-600 font-semibold hover:underline">
             Sign up
           </Link>
+          <span className="mx-2 text-gray-400">|</span>
+          <Link href="/auth/patient/forgot-password" className="text-sm text-teal-600 font-semibold hover:underline">
+            Forgot password?
+          </Link>
         </>
       }
     >

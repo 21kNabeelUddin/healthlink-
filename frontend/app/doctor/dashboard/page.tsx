@@ -107,7 +107,7 @@ export default function DoctorDashboard() {
     ? appointments.filter((apt) => apt.status === 'PENDING')
     : [];
   const activeClinics = Array.isArray(clinics)
-    ? clinics.filter((clinic) => clinic.isActive)
+    ? clinics.filter((clinic) => clinic.active)
     : [];
   const todaysVideoConsults = todaysAppointments.filter((apt) => apt.appointmentType === 'ONLINE')
     .length;
@@ -293,10 +293,10 @@ export default function DoctorDashboard() {
                                 <Badge
                                   variant="default"
                                   className={`text-xs ${
-                                    clinic.isActive ? '' : 'bg-slate-200 text-slate-600'
+                                    clinic.active ? '' : 'bg-slate-200 text-slate-600'
                                   }`}
                                 >
-                                  {clinic.isActive ? 'Active' : 'Inactive'}
+                                  {clinic.active ? 'Active' : 'Inactive'}
                                 </Badge>
                               </div>
                               <p className="text-sm text-slate-600 mb-1">{clinic.address}</p>

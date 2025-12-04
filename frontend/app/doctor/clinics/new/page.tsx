@@ -23,16 +23,17 @@ export default function NewClinicPage() {
 
     setIsLoading(true);
     try {
-      await facilitiesApi.createForDoctor(user.id.toString(), {
-        ...data,
-        facilityType: 'CLINIC',
-        province: data.state,
-      });
+      await facilitiesApi.createForDoctor(user.id.toString(), data);
 
       toast.success('Clinic created successfully!');
       router.push('/doctor/clinics');
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to create clinic');
+      if (error.response?.status === 401) {
+        toast.error('Your session has expired. Please log in again to create a clinic.');
+        setTimeout(() => router.push('/auth/doctor/login'), 800);
+      } else {
+        toast.error(error.response?.data?.message || 'Failed to create clinic');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -93,6 +94,18 @@ export default function NewClinicPage() {
               type="email"
               {...register('email', { required: 'Email is required' })}
               error={errors.email?.message}
+            />
+
+            <Input
+              label="Consultation Fee (PKR) *"
+              type="number"
+              step="0.01"
+              min="0"
+              {...register('consultationFee', {
+                required: 'Consultation fee is required',
+                min: { value: 0, message: 'Fee must be positive' },
+              })}
+              error={errors.consultationFee?.message}
             />
 
             <div>

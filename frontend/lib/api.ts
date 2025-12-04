@@ -181,6 +181,20 @@ export const authApi = {
     return unwrapResponse(response.data);
   },
 
+  forgotPassword: async (email: string) => {
+    const response = await api.post('/api/v1/auth/forgot-password', { email });
+    return unwrapResponse(response.data);
+  },
+
+  resetPassword: async (email: string, otp: string, newPassword: string) => {
+    const response = await api.post('/api/v1/auth/reset-password', {
+      email,
+      otp,
+      newPassword,
+    });
+    return unwrapResponse(response.data);
+  },
+
   refreshToken: async () => {
     const refreshToken = localStorage.getItem('refreshToken');
     if (!refreshToken) throw new Error('No refresh token');
@@ -475,6 +489,11 @@ export const facilitiesApi = {
 
   deactivate: async (id: string) => {
     const response = await api.delete(`/api/v1/facilities/${id}`);
+    return response.data;
+  },
+
+  activate: async (id: string) => {
+    const response = await api.post(`/api/v1/facilities/${id}/activate`);
     return response.data;
   },
 };

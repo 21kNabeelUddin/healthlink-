@@ -38,11 +38,14 @@ export default function ClinicsPage() {
     }
   };
 
-  const handleToggleStatus = async (clinicId: string) => {
+  const handleToggleStatus = async (clinic: Clinic) => {
     try {
-      // Deactivate/reactivate by deactivating and then reactivating
-      await facilitiesApi.deactivate(clinicId);
-      toast.success('Clinic status updated');
+      if (clinic.active) {
+        await facilitiesApi.deactivate(clinic.id.toString());
+      } else {
+        await facilitiesApi.activate(clinic.id.toString());
+      }
+      toast.success(`Clinic ${clinic.active ? 'deactivated' : 'activated'} successfully`);
       loadClinics();
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to update clinic status');
@@ -93,9 +96,9 @@ export default function ClinicsPage() {
                 <div>
                   <h3 className="text-xl font-semibold text-gray-800">{clinic.name}</h3>
                   <span className={`inline-block mt-2 px-2 py-1 rounded text-xs ${
-                    clinic.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                    clinic.active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
                   }`}>
-                    {clinic.isActive ? 'Active' : 'Inactive'}
+                    {clinic.active ? 'Active' : 'Inactive'}
                   </span>
                 </div>
 
@@ -114,9 +117,9 @@ export default function ClinicsPage() {
                   <Button
                     variant="secondary"
                     className="w-full"
-                    onClick={() => handleToggleStatus(clinic.id.toString())}
+                    onClick={() => handleToggleStatus(clinic)}
                   >
-                    {clinic.isActive ? 'Deactivate' : 'Activate'}
+                    {clinic.active ? 'Deactivate' : 'Activate'}
                   </Button>
                   <Button
                     variant="danger"

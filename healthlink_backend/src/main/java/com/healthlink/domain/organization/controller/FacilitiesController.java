@@ -71,4 +71,10 @@ public class FacilitiesController {
     public void deactivate(@PathVariable UUID id) {
         facilityService.deactivate(id);
     }
+
+    @PostMapping("/{id}/activate")
+    @PreAuthorize("hasAnyRole('DOCTOR','ORGANIZATION','ADMIN')")
+    public void activate(@PathVariable UUID id) {
+        facilityService.activate(id);
+    }
 }

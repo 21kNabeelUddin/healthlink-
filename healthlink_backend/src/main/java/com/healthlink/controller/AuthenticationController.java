@@ -143,4 +143,33 @@ public class AuthenticationController {
 
         return ResponseEntity.noContent().build();
     }
+
+    /**
+     * Initiate password reset (Patient & Doctor only)
+     */
+    @PostMapping("/forgot-password")
+    @Operation(summary = "Forgot Password", description = "Send a password reset OTP to the user's email (Patients and Doctors only).")
+    @ApiResponse(responseCode = "200", description = "If an account exists for this email, a reset code has been sent.")
+    public ResponseEntity<String> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        safeLogger.event("forgot_password_request")
+                .withMasked("email", request.getEmail())
+                .log();
+        authenticationService.initiatePasswordReset(request.getEmail());
+        return ResponseEntity.ok("If an account exists for this email, a reset code has been sent.");
+    }
+
+    /**
+     * Reset password using OTP (Patient & Doctor only)
+     */
+    @PostMapping("/reset-password")
+    @Operation(summary = "Reset Password", description = "Reset password using email, OTP, and a new password (Patients and Doctors only).")
+    @ApiResponse(responseCode = "200", description = "Password reset successfully")
+    @ApiResponse(responseCode = "400", description = "Invalid email, OTP, or weak password")
+    public ResponseEntity<String> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        safeLogger.event("reset_password_request")
+                .withMasked("email", request.getEmail())
+                .log();
+        authenticationService.resetPassword(request.getEmail(), request.getOtp(), request.getNewPassword());
+        return ResponseEntity.ok("Password reset successfully");
+    }
 }

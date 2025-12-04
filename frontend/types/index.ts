@@ -148,11 +148,14 @@ export interface Clinic {
   description: string;
   openingTime: string;
   closingTime: string;
-  isActive: boolean;
+  active: boolean;
   doctorId: number;
   doctorName: string;
   createdAt: string;
   updatedAt: string;
+  latitude?: number;
+  longitude?: number;
+  consultationFee?: number;
 }
 
 export interface ClinicRequest {
@@ -166,6 +169,9 @@ export interface ClinicRequest {
   description: string;
   openingTime: string;
   closingTime: string;
+  consultationFee: number;
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface PatientProfileUpdateRequest {

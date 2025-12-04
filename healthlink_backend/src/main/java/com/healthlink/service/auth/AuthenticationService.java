@@ -290,6 +290,62 @@ public class AuthenticationService {
     }
 
     /**
+     * Initiate password reset for Patient and Doctor roles.
+     * Generates an OTP and sends it via email (re-uses existing OTP flow).
+     * For security, this method is silent even if the user/email does not exist.
+     */
+    @Transactional
+    public void initiatePasswordReset(String email) {
+        userRepository.findByEmailAndDeletedAtIsNull(email).ifPresent(user -> {
+            if (user.getRole() != UserRole.PATIENT && user.getRole() != UserRole.DOCTOR) {
+                // Only patients and doctors are allowed to reset passwords via this flow
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Password reset is only available for Patient and Doctor accounts.");
+            }
+            otpService.generateOtp(email);
+            SafeLogger.get(AuthenticationService.class)
+                    .event("password_reset_otp_sent")
+                    .withMasked("email", email)
+                    .log();
+        });
+        // Always return success message from controller to avoid user enumeration.
+    }
+
+    /**
+     * Complete password reset using email + OTP + new password.
+     */
+    @Transactional
+    public void resetPassword(String email, String otp, String newPassword) {
+        User user = userRepository.findByEmailAndDeletedAtIsNull(email)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid email or OTP"));
+
+        if (user.getRole() != UserRole.PATIENT && user.getRole() != UserRole.DOCTOR) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Password reset is only available for Patient and Doctor accounts.");
+        }
+
+        if (!otpService.verifyOtp(email, otp)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid or expired OTP");
+        }
+
+        if (!isValidPassword(newPassword)) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Password must be at least 8 characters long, contain at least one uppercase letter, one lowercase letter, one number, and one special character.");
+        }
+
+        user.setPasswordHash(passwordEncoder.encode(newPassword));
+        user.markTokensRevoked();
+        refreshTokenService.revokeAllForUser(user.getId());
+        userRepository.save(user);
+
+        SafeLogger.get(AuthenticationService.class)
+                .event("password_reset_success")
+                .withMasked("email", email)
+                .log();
+    }
+
+    /**
      * Simplified MVP: No refresh token revocation needed since we don't store them
      */
     public void revokeRefreshToken(String refreshToken) {

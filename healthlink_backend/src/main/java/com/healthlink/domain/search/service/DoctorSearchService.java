@@ -218,14 +218,15 @@ public class DoctorSearchService {
         for (Facility f : facilities) {
             List<ServiceOffering> offerings = serviceOfferingRepository.findByFacilityId(f.getId());
             services.addAll(offerings.stream().map(ServiceOffering::getName).collect(Collectors.toList()));
-            
+
             facilityDocs.add(DoctorDocument.FacilitySummaryDocument.builder()
                     .id(f.getId().toString())
                     .name(f.getName())
                     .address(f.getAddress())
-                    // City/Phone not in Facility entity directly? Check Facility.java
-                    // Facility has address, but maybe not city/phone separate?
-                    // Let's check Facility.java again. It has address.
+                    .city(f.getCity())
+                    .phoneNumber(f.getPhoneNumber())
+                    .latitude(f.getLatitude())
+                    .longitude(f.getLongitude())
                     .build());
         }
 

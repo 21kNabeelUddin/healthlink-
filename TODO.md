@@ -45,11 +45,11 @@ This document tracks all tasks and features that need to be completed before dep
 - [x] Appointment booking flow
 - [x] Doctor search and selection
 - [x] Online/On-site appointment types
-- [ ] Appointment scheduling validation
+- [x] Appointment scheduling validation (emergency appointments, time validation, overlap checking)
 - [ ] Appointment reminders (email/SMS)
 - [ ] Appointment cancellation and refund logic
 - [ ] Appointment rescheduling
-- [ ] Video call integration (Zoom)
+- [x] Video call integration (Zoom) - Full backend integration with Zoom API, automatic meeting creation for ONLINE appointments, frontend UI with join links
 
 ## 💳 Payment Integration
 
@@ -63,11 +63,13 @@ This document tracks all tasks and features that need to be completed before dep
 
 ## 📋 Prescription Management
 
-- [ ] Prescription creation by doctors
-- [ ] Prescription viewing by patients
-- [ ] Prescription history
-- [ ] Digital prescription format
-- [ ] Prescription sharing/download
+- [x] Prescription creation by doctors (with templates support)
+- [x] Prescription viewing by patients
+- [x] Prescription history (patient and doctor views)
+- [x] Digital prescription format
+- [x] Drug interaction checking (OpenFDA integration with automatic warnings)
+- [x] Prescription warnings display (high-risk medications, drug interactions)
+- [ ] Prescription sharing/download (PDF export)
 
 ## 💬 Communication
 
@@ -103,9 +105,13 @@ This document tracks all tasks and features that need to be completed before dep
 
 - [x] Patient portal - Doctor search and booking
 - [x] Patient portal - Appointment management
+- [x] Patient portal - Prescription viewing
+- [x] Patient portal - Zoom meeting join links
 - [x] Doctor portal - Dashboard
 - [x] Doctor portal - Clinic management
 - [x] Doctor portal - Emergency patient creation
+- [x] Doctor portal - Prescription creation and management
+- [x] Doctor portal - Zoom meeting start links
 - [ ] Admin portal - User approval management
 - [ ] Admin portal - PMDC verification management
 - [ ] Staff portal - PMDC verification interface
@@ -169,7 +175,7 @@ This document tracks all tasks and features that need to be completed before dep
 - [ ] Production environment variables
 - [ ] Email service configuration (Gmail SMTP)
 - [ ] Payment gateway credentials
-- [ ] Video call service configuration (Zoom)
+- [x] Video call service configuration (Zoom) - Backend service configured, environment variables documented in ZOOM_SETUP.md
 - [ ] File storage configuration (MinIO/S3)
 - [ ] Redis configuration (if using)
 - [ ] RabbitMQ configuration (if using)
@@ -222,8 +228,8 @@ This document tracks all tasks and features that need to be completed before dep
 
 1. **Payment Gateway Integration** - EasyPaisa/JazzCash
 2. **PMDC Verification Frontend** - Admin/Staff portal
-3. **Video Call Integration** - Zoom integration
-4. **Prescription System** - Basic prescription creation/viewing
+3. ~~**Video Call Integration** - Zoom integration~~ ✅ **COMPLETED** - Full Zoom API integration with automatic meeting creation
+4. ~~**Prescription System** - Basic prescription creation/viewing~~ ✅ **COMPLETED** - Full prescription system with drug interaction checking
 5. **Email Notifications** - Critical notifications (appointments, payments)
 6. **Testing** - Basic testing of critical flows
 7. **Security Audit** - Review authentication and authorization
@@ -242,5 +248,32 @@ This document tracks all tasks and features that need to be completed before dep
 
 ---
 
-**Last Updated:** 2025-01-06
+**Last Updated:** 2025-01-27
+
+## ✅ Recently Completed Features
+
+### Zoom Integration (Completed)
+- ✅ Backend Zoom API service with Server-to-Server OAuth
+- ✅ Automatic Zoom meeting creation for ONLINE appointments
+- ✅ Meeting details stored in appointment (zoomMeetingId, zoomJoinUrl, zoomStartUrl, password)
+- ✅ Frontend integration with join/start links in appointment pages
+- ✅ Configuration documentation (ZOOM_SETUP.md)
+- ✅ Support for both patient join links and doctor start links
+
+### Prescription Management System (Completed)
+- ✅ Full CRUD operations for prescriptions
+- ✅ Doctor prescription creation with templates
+- ✅ Patient prescription viewing and history
+- ✅ Drug interaction checking via OpenFDA API
+- ✅ Automatic medication interaction warnings
+- ✅ High-risk drug detection and warnings
+- ✅ Prescription linked to appointments
+- ✅ Frontend pages for both patient and doctor portals
+- ✅ Prescription polling for real-time updates
+
+### Appointment System Enhancements (Completed)
+- ✅ Emergency appointment validation (5-minute window)
+- ✅ Appointment overlap detection
+- ✅ Time validation for past/future appointments
+- ✅ Integration with Zoom for online appointments
 

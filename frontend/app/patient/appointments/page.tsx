@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { appointmentsApi } from '@/lib/api';
+import { appointmentsApi, reviewsApi } from '@/lib/api';
 import { Appointment } from '@/types';
 import { toast } from 'react-hot-toast';
 import DashboardLayout from '@/components/layout/DashboardLayout';
@@ -10,21 +11,68 @@ import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Link from 'next/link';
 import { format } from 'date-fns';
+import { Star } from 'lucide-react';
 
 import { ActiveAppointmentPrescriptionMonitor } from '@/components/prescription/ActiveAppointmentPrescriptionMonitor';
 
 
 export default function AppointmentsPage() {
+  const router = useRouter();
   const { user } = useAuth();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
+  const [reviewedAppointments, setReviewedAppointments] = useState<Set<string>>(new Set());
+  const hasCheckedReviews = useRef(false);
+
+  const checkReviews = async (appts: Appointment[]) => {
+    if (!user?.id || hasCheckedReviews.current) return;
+    hasCheckedReviews.current = true;
+    
+    try {
+      const myReviews = await reviewsApi.getMine();
+      const reviewedIds = new Set(myReviews.map((r: any) => r.appointmentId?.toString()));
+      setReviewedAppointments(reviewedIds);
+      
+      // Check for newly completed appointments that need review
+      const completedAppointments = appts.filter(
+        apt => apt.status === 'COMPLETED' && !reviewedIds.has(apt.id.toString())
+      );
+      
+      if (completedAppointments.length > 0) {
+        // Show notification and auto-redirect to first completed appointment review
+        const firstCompleted = completedAppointments[0];
+        setTimeout(() => {
+          toast.success('Your appointment has been completed. Please rate your experience.', {
+            duration: 5000,
+            action: {
+              label: 'Rate Now',
+              onClick: () => router.push(`/patient/appointments/${firstCompleted.id}/review`),
+            },
+          });
+          // Auto-redirect after 5 seconds if user doesn't click
+          setTimeout(() => {
+            router.push(`/patient/appointments/${firstCompleted.id}/review`);
+          }, 5000);
+        }, 1000);
+      }
+    } catch (error) {
+      console.error('Failed to check reviews:', error);
+      hasCheckedReviews.current = false; // Reset on error
+    }
+  };
 
   useEffect(() => {
     if (user?.id) {
       loadAppointments();
     }
   }, [user, statusFilter]);
+
+  useEffect(() => {
+    if (appointments.length > 0 && user?.id) {
+      checkReviews(appointments);
+    }
+  }, [appointments.length, user?.id]);
 
   const loadAppointments = async () => {
     setIsLoading(true);
@@ -195,6 +243,21 @@ export default function AppointmentsPage() {
                     </Link>
                   )}
 
+                  {appointment.status === 'COMPLETED' && (
+                    <>
+                      <Link href={`/patient/prescriptions?appointmentId=${appointment.id}`}>
+                        <Button variant="outline" className="w-full">View Prescription</Button>
+                      </Link>
+                      {!reviewedAppointments.has(appointment.id.toString()) && (
+                        <Link href={`/patient/appointments/${appointment.id}/review`}>
+                          <Button className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600">
+                            <Star className="w-4 h-4 mr-2" />
+                            Rate Appointment
+                          </Button>
+                        </Link>
+                      )}
+                    </>
+                  )}
 
                 </div>
               </div>

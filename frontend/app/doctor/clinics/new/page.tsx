@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useForm } from 'react-hook-form';
@@ -11,7 +11,9 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import Card from '@/components/ui/Card';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
+import SearchableSelect from '@/components/ui/SearchableSelect';
 import { Building2, MapPin, Clock, Phone, Mail, DollarSign, FileText, CheckCircle2 } from 'lucide-react';
+import { getStates, getCities, getTowns, pakistanLocations } from '@/lib/pakistan-locations';
 
 export default function NewClinicPage() {
   const router = useRouter();
@@ -21,7 +23,49 @@ export default function NewClinicPage() {
     online: false,
     onsite: true, // Default to onsite
   });
-  const { register, handleSubmit, formState: { errors }, setValue } = useForm<ClinicRequest>();
+  
+  // Location state
+  const [selectedState, setSelectedState] = useState<string>('');
+  const [selectedCity, setSelectedCity] = useState<string>('');
+  const [selectedTown, setSelectedTown] = useState<string>('');
+
+  const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm<ClinicRequest>();
+
+  // Get available options
+  const states = getStates();
+  const cities = selectedState ? getCities(selectedState) : [];
+  const towns = selectedState && selectedCity ? getTowns(selectedState, selectedCity) : [];
+
+  // Reset city and town when state changes
+  useEffect(() => {
+    if (selectedState) {
+      setSelectedCity('');
+      setSelectedTown('');
+      setValue('city', '');
+      setValue('town', '');
+    }
+  }, [selectedState, setValue]);
+
+  // Reset town when city changes
+  useEffect(() => {
+    if (selectedCity) {
+      setSelectedTown('');
+      setValue('town', '');
+    }
+  }, [selectedCity, setValue]);
+
+  // Update form values when selections change
+  useEffect(() => {
+    if (selectedState) setValue('state', selectedState);
+  }, [selectedState, setValue]);
+
+  useEffect(() => {
+    if (selectedCity) setValue('city', selectedCity);
+  }, [selectedCity, setValue]);
+
+  useEffect(() => {
+    if (selectedTown) setValue('town', selectedTown);
+  }, [selectedTown, setValue]);
 
   const onSubmit = async (data: ClinicRequest) => {
     if (!user?.id) return;
@@ -100,25 +144,49 @@ export default function NewClinicPage() {
                 />
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <Input
-                    label="Town *"
-                    {...register('town', { required: 'Town is required' })}
-                    error={errors.town?.message}
-                    placeholder="e.g., Malir Cantt"
-                  />
-                  <Input
-                    label="City *"
-                    {...register('city', { required: 'City is required' })}
-                    error={errors.city?.message}
-                    placeholder="e.g., Karachi"
-                  />
-                  <Input
+                  <SearchableSelect
                     label="State *"
-                    {...register('state', { required: 'State is required' })}
+                    options={states}
+                    value={selectedState}
+                    onChange={(value) => {
+                      setSelectedState(value);
+                      setValue('state', value, { shouldValidate: true });
+                    }}
+                    placeholder="Select state..."
                     error={errors.state?.message}
-                    placeholder="e.g., Sindh"
+                    required
+                  />
+                  <SearchableSelect
+                    label="City *"
+                    options={cities}
+                    value={selectedCity}
+                    onChange={(value) => {
+                      setSelectedCity(value);
+                      setValue('city', value, { shouldValidate: true });
+                    }}
+                    placeholder={selectedState ? 'Select city...' : 'Select state first'}
+                    error={errors.city?.message}
+                    required
+                    disabled={!selectedState}
+                  />
+                  <SearchableSelect
+                    label="Town *"
+                    options={towns}
+                    value={selectedTown}
+                    onChange={(value) => {
+                      setSelectedTown(value);
+                      setValue('town', value, { shouldValidate: true });
+                    }}
+                    placeholder={selectedCity ? 'Select town...' : 'Select city first'}
+                    error={errors.town?.message}
+                    required
+                    disabled={!selectedCity}
                   />
                 </div>
+                {/* Hidden inputs for form validation */}
+                <input type="hidden" {...register('state', { required: 'State is required' })} />
+                <input type="hidden" {...register('city', { required: 'City is required' })} />
+                <input type="hidden" {...register('town', { required: 'Town is required' })} />
 
                 <Input
                   label="Zip Code *"

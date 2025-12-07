@@ -75,7 +75,7 @@ export interface Doctor extends User {
 
 // Appointment
 export type AppointmentType = 'ONLINE' | 'ONSITE';
-export type AppointmentStatus = 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED' | 'REJECTED';
+export type AppointmentStatus = 'PENDING_PAYMENT' | 'CONFIRMED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW';
 
 export interface Appointment {
   id: number;
@@ -88,6 +88,7 @@ export interface Appointment {
   zoomMeetingUrl?: string;
   zoomMeetingPassword?: string;
   zoomJoinUrl?: string;
+  zoomStartUrl?: string; // For doctors to start the meeting
   patientId: number;
   patientName: string;
   patientEmail?: string;

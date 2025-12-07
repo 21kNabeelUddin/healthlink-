@@ -21,7 +21,11 @@ import {
   CheckCircle2,
   XCircle,
   AlertCircle,
+  FileText,
+  ExternalLink,
 } from 'lucide-react';
+import Link from 'next/link';
+import { prescriptionsApi } from '@/lib/api';
 
 interface ClinicWithAppointments extends Clinic {
   appointments: Appointment[];
@@ -34,6 +38,7 @@ export default function DoctorAppointmentsPage() {
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [selectedClinicFilter, setSelectedClinicFilter] = useState<string>('all');
   const [isLoading, setIsLoading] = useState(true);
+  const [prescriptionMap, setPrescriptionMap] = useState<Record<string, boolean>>({}); // appointmentId -> hasPrescription
 
   useEffect(() => {
     if (user?.id) {
@@ -47,6 +52,18 @@ export default function DoctorAppointmentsPage() {
     try {
       const data = await appointmentsApi.list(statusFilter || undefined);
       setAppointments(data || []);
+      
+      // Check which appointments have prescriptions
+      const prescriptionChecks: Record<string, boolean> = {};
+      for (const apt of data || []) {
+        try {
+          const prescription = await prescriptionsApi.getByAppointmentId(apt.id.toString());
+          prescriptionChecks[apt.id.toString()] = !!prescription;
+        } catch (error) {
+          prescriptionChecks[apt.id.toString()] = false;
+        }
+      }
+      setPrescriptionMap(prescriptionChecks);
     } catch (error: any) {
       toast.error('Failed to load appointments');
       console.error('Appointments load error:', error);
@@ -94,8 +111,9 @@ export default function DoctorAppointmentsPage() {
           clinic.appointments.push(appointment);
         } else {
           // Clinic not found in our list - create a temporary entry for it
+          // Use 0 as temporary ID since appointment.clinicId is a string (UUID) but Clinic.id is number
           clinicMap.set(appointmentClinicId, {
-            id: appointment.clinicId,
+            id: 0, // Temporary ID for clinics not in our list
             name: appointment.clinicName || 'Unknown Clinic',
             address: appointment.clinicAddress || '',
             city: '',
@@ -156,6 +174,26 @@ export default function DoctorAppointmentsPage() {
     });
   }, [appointments, clinics, selectedClinicFilter, user?.id]);
 
+  // Helper function to check if meeting can be started (5 minutes before start time)
+  const canStartMeeting = (appointmentDateTime: string): boolean => {
+    const appointmentTime = new Date(appointmentDateTime);
+    const now = new Date();
+    const fiveMinutesBefore = new Date(appointmentTime.getTime() - 5 * 60 * 1000);
+    return now >= fiveMinutesBefore;
+  };
+
+  // Helper function to check if appointment time has started (for prescription creation)
+  const hasAppointmentStarted = (appointmentDateTime: string): boolean => {
+    const appointmentTime = new Date(appointmentDateTime);
+    const now = new Date();
+    return now >= appointmentTime;
+  };
+
+  // Helper function to check if appointment is active (can be worked on)
+  const isActiveAppointment = (status: string): boolean => {
+    return status === 'PENDING_PAYMENT' || status === 'CONFIRMED' || status === 'IN_PROGRESS';
+  };
+
   const handleAppointmentAction = async (appointmentId: string, action: 'confirm' | 'reject' | 'complete') => {
     try {
       switch (action) {
@@ -168,8 +206,104 @@ export default function DoctorAppointmentsPage() {
           toast.success('Appointment rejected');
           break;
         case 'complete':
+          // Show confirmation dialog first
+          const apt = appointments.find(a => a.id.toString() === appointmentId);
+          if (!apt) {
+            toast.error('Appointment not found');
+            return;
+          }
+
+          // Check if prescription exists before completing
+          const hasPrescription = prescriptionMap[appointmentId];
+          if (!hasPrescription) {
+            // Try to fetch prescription one more time
+            try {
+              const prescription = await prescriptionsApi.getByAppointmentId(appointmentId);
+              if (!prescription) {
+                toast.error(
+                  (t) => (
+                    <div className="flex flex-col gap-2 max-w-md">
+                      <p className="font-semibold text-base">Prescription Required</p>
+                      <p className="text-sm text-slate-700">
+                        You must create a prescription before concluding this appointment. Please fill out the prescription form first.
+                      </p>
+                      <div className="flex gap-2 mt-2">
+                        <button
+                          onClick={() => {
+                            toast.dismiss(t.id);
+                            window.location.href = `/doctor/prescriptions/new?appointmentId=${appointmentId}&patientId=${apt.patientId}`;
+                          }}
+                          className="px-4 py-2 bg-teal-600 text-white rounded-lg text-sm font-medium hover:bg-teal-700 transition-colors"
+                        >
+                          Create Prescription Now
+                        </button>
+                        <button
+                          onClick={() => toast.dismiss(t.id)}
+                          className="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-300 transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ),
+                  { 
+                    duration: 10000,
+                    icon: '⚠️',
+                  }
+                );
+                return;
+              }
+            } catch (error) {
+              toast.error(
+                (t) => (
+                  <div className="flex flex-col gap-2 max-w-md">
+                    <p className="font-semibold text-base">Prescription Required</p>
+                    <p className="text-sm text-slate-700">
+                      You must create a prescription before concluding this appointment. Please fill out the prescription form first.
+                    </p>
+                    <div className="flex gap-2 mt-2">
+                      <button
+                        onClick={() => {
+                          toast.dismiss(t.id);
+                          window.location.href = `/doctor/prescriptions/new?appointmentId=${appointmentId}&patientId=${apt.patientId}`;
+                        }}
+                        className="px-4 py-2 bg-teal-600 text-white rounded-lg text-sm font-medium hover:bg-teal-700 transition-colors"
+                      >
+                        Create Prescription Now
+                      </button>
+                      <button
+                        onClick={() => toast.dismiss(t.id)}
+                        className="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-300 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ),
+                { 
+                  duration: 10000,
+                  icon: '⚠️',
+                }
+              );
+              return;
+            }
+          }
+
+          // Show confirmation dialog
+          const confirmed = window.confirm(
+            `Are you sure you want to conclude this appointment?\n\n` +
+            `Patient: ${apt.patientName}\n` +
+            `Date: ${format(new Date(apt.appointmentDateTime), 'MMM dd, yyyy h:mm a')}\n\n` +
+            `This action cannot be undone.`
+          );
+
+          if (!confirmed) {
+            return;
+          }
+
           await appointmentsApi.complete(appointmentId);
-          toast.success('Appointment completed');
+          toast.success('Appointment completed successfully');
+          loadAppointments(); // Refresh the list
           break;
       }
       loadAppointments();
@@ -182,13 +316,15 @@ export default function DoctorAppointmentsPage() {
     switch (status) {
       case 'CONFIRMED':
         return 'bg-green-100 text-green-800 border-green-200';
-      case 'PENDING':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'PENDING_PAYMENT':
+        return 'bg-amber-100 text-amber-800 border-amber-200';
+      case 'IN_PROGRESS':
+        return 'bg-blue-100 text-blue-800 border-blue-200';
       case 'CANCELLED':
         return 'bg-red-100 text-red-800 border-red-200';
       case 'COMPLETED':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'REJECTED':
+        return 'bg-teal-100 text-teal-800 border-teal-200';
+      case 'NO_SHOW':
         return 'bg-gray-100 text-gray-800 border-gray-200';
       default:
         return 'bg-gray-100 text-gray-800 border-gray-200';
@@ -198,11 +334,12 @@ export default function DoctorAppointmentsPage() {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'CONFIRMED':
+      case 'IN_PROGRESS':
         return <CheckCircle2 className="w-4 h-4" />;
-      case 'PENDING':
+      case 'PENDING_PAYMENT':
         return <AlertCircle className="w-4 h-4" />;
       case 'CANCELLED':
-      case 'REJECTED':
+      case 'NO_SHOW':
         return <XCircle className="w-4 h-4" />;
       case 'COMPLETED':
         return <CheckCircle2 className="w-4 h-4" />;
@@ -420,49 +557,86 @@ export default function DoctorAppointmentsPage() {
                                   </div>
                                 )}
 
-                                {appointment.appointmentType === 'ONLINE' && appointment.zoomJoinUrl && (
+                                {/* Zoom Meeting Button - Show for ONLINE appointments */}
+                                {appointment.appointmentType === 'ONLINE' && isActiveAppointment(appointment.status) && (
                                   <div className="mt-3">
-                                    <a
-                                      href={appointment.zoomJoinUrl}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="inline-flex items-center gap-2 text-teal-600 hover:text-teal-700 text-sm font-medium"
-                                    >
-                                      <Video className="w-4 h-4" />
-                                      Join Zoom Meeting
-                                    </a>
+                                    {appointment.zoomStartUrl ? (
+                                      canStartMeeting(appointment.appointmentDateTime) ? (
+                                        <a
+                                          href={appointment.zoomStartUrl}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="inline-flex items-center gap-2 bg-gradient-to-r from-teal-500 to-violet-600 text-white px-4 py-2 rounded-lg font-medium hover:from-teal-600 hover:to-violet-700 transition-all shadow-md hover:shadow-lg"
+                                        >
+                                          <Video className="w-5 h-5" />
+                                          Start Zoom Meeting
+                                          <ExternalLink className="w-4 h-4" />
+                                        </a>
+                                      ) : (
+                                        <div className="inline-flex items-center gap-2 bg-slate-200 text-slate-600 px-4 py-2 rounded-lg font-medium cursor-not-allowed">
+                                          <Clock className="w-5 h-5" />
+                                          <span>Meeting available 5 minutes before start time ({format(new Date(appointment.appointmentDateTime), 'MMM dd, h:mm a')})</span>
+                                        </div>
+                                      )
+                                    ) : (
+                                      <div className="inline-flex items-center gap-2 bg-amber-100 text-amber-800 px-4 py-2 rounded-lg font-medium border border-amber-300">
+                                        <AlertCircle className="w-5 h-5" />
+                                        <span>Zoom meeting link will be available soon</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                                
+                                {/* Prescription Status */}
+                                {prescriptionMap[appointment.id.toString()] ? (
+                                  <div className="mt-2 flex items-center gap-2 text-sm text-green-600">
+                                    <CheckCircle2 className="w-4 h-4" />
+                                    <span>Prescription created</span>
+                                  </div>
+                                ) : isActiveAppointment(appointment.status) && (
+                                  <div className="mt-2 flex items-center gap-2 text-sm text-amber-600">
+                                    <AlertCircle className="w-4 h-4" />
+                                    <span>Prescription required</span>
                                   </div>
                                 )}
                               </div>
 
                               {/* Actions */}
                               <div className="flex flex-col gap-2 ml-4">
-                                {appointment.status === 'PENDING' && (
+                                {/* Show for PENDING_PAYMENT, CONFIRMED, and IN_PROGRESS statuses */}
+                                {isActiveAppointment(appointment.status) && (
                                   <>
+                                    {hasAppointmentStarted(appointment.appointmentDateTime) ? (
+                                      <Link href={`/doctor/prescriptions/new?appointmentId=${appointment.id}&patientId=${appointment.patientId}`}>
+                                        <Button
+                                          variant="primary"
+                                          className="w-full text-sm px-3 py-1.5"
+                                        >
+                                          <FileText className="w-4 h-4 mr-2" />
+                                          {prescriptionMap[appointment.id.toString()] ? 'Edit Prescription' : 'Create Prescription'}
+                                        </Button>
+                                      </Link>
+                                    ) : (
+                                      <Button
+                                        variant="secondary"
+                                        className="w-full text-sm px-3 py-1.5 cursor-not-allowed"
+                                        disabled
+                                        title={`Prescription can only be created after the appointment starts (${format(new Date(appointment.appointmentDateTime), 'MMM dd, h:mm a')})`}
+                                      >
+                                        <FileText className="w-4 h-4 mr-2" />
+                                        Create Prescription
+                                        <span className="ml-2 text-xs">(Available after appointment starts)</span>
+                                      </Button>
+                                    )}
                                     <Button
                                       variant="primary"
-                                      size="sm"
-                                      onClick={() => handleAppointmentAction(appointment.id.toString(), 'confirm')}
+                                      onClick={() => handleAppointmentAction(appointment.id.toString(), 'complete')}
+                                      className="w-full text-sm px-3 py-1.5"
                                     >
-                                      Confirm
-                                    </Button>
-                                    <Button
-                                      variant="danger"
-                                      size="sm"
-                                      onClick={() => handleAppointmentAction(appointment.id.toString(), 'reject')}
-                                    >
-                                      Reject
+                                      <CheckCircle2 className="w-4 h-4 mr-2" />
+                                      Conclude Appointment
                                     </Button>
                                   </>
-                                )}
-                                {appointment.status === 'CONFIRMED' && (
-                                  <Button
-                                    variant="primary"
-                                    size="sm"
-                                    onClick={() => handleAppointmentAction(appointment.id.toString(), 'complete')}
-                                  >
-                                    Mark Complete
-                                  </Button>
                                 )}
                               </div>
                             </div>

@@ -46,10 +46,14 @@ This document tracks all tasks and features that need to be completed before dep
 - [x] Doctor search and selection
 - [x] Online/On-site appointment types
 - [x] Appointment scheduling validation (emergency appointments, time validation, overlap checking)
+- [x] Video call integration (Zoom) - Full backend integration with Zoom API, automatic meeting creation for ONLINE appointments, frontend UI with join/start links
+- [x] Appointment status handling (PENDING_PAYMENT, CONFIRMED, IN_PROGRESS, COMPLETED, CANCELLED, NO_SHOW)
+- [x] Zoom meeting button visibility and time validation (5 minutes before start)
+- [x] Prescription creation time validation (only after appointment starts)
+- [x] Appointment completion confirmation dialog
 - [ ] Appointment reminders (email/SMS)
 - [ ] Appointment cancellation and refund logic
 - [ ] Appointment rescheduling
-- [x] Video call integration (Zoom) - Full backend integration with Zoom API, automatic meeting creation for ONLINE appointments, frontend UI with join links
 
 ## 💳 Payment Integration
 
@@ -69,6 +73,8 @@ This document tracks all tasks and features that need to be completed before dep
 - [x] Digital prescription format
 - [x] Drug interaction checking (OpenFDA integration with automatic warnings)
 - [x] Prescription warnings display (high-risk medications, drug interactions)
+- [x] Prescription form validation (title, body, medications required)
+- [x] Prescription creation time validation (only after appointment starts)
 - [ ] Prescription sharing/download (PDF export)
 
 ## 💬 Communication
@@ -112,6 +118,10 @@ This document tracks all tasks and features that need to be completed before dep
 - [x] Doctor portal - Emergency patient creation
 - [x] Doctor portal - Prescription creation and management
 - [x] Doctor portal - Zoom meeting start links
+- [x] Doctor portal - Appointment page with all statuses (PENDING_PAYMENT, CONFIRMED, IN_PROGRESS, etc.)
+- [x] Doctor portal - Appointment action buttons (Create Prescription, Conclude Appointment)
+- [x] Doctor portal - Time-based validation for prescriptions and meetings
+- [x] Doctor portal - Confirmation dialogs for critical actions
 - [ ] Admin portal - User approval management
 - [ ] Admin portal - PMDC verification management
 - [ ] Staff portal - PMDC verification interface
@@ -185,6 +195,11 @@ This document tracks all tasks and features that need to be completed before dep
 - [x] Doctor listing showing 0 doctors (fixed by removing pmdcVerified requirement)
 - [x] Clinic status not updating correctly
 - [x] Patient portal doctor search not working
+- [x] Zoom meeting button not appearing on appointments page (fixed zoomStartUrl mapping)
+- [x] TypeScript compilation errors in appointments page (fixed ID type mismatch, Button size prop)
+- [x] Prescription creation allowed before appointment time (added time validation)
+- [x] Missing confirmation dialog for concluding appointments (added confirmation)
+- [x] Prescription form validation missing (added required field validation)
 - [ ] Session logout when opening multiple tabs (localStorage issue)
 - [ ] Time selection interface improvement needed
 
@@ -192,11 +207,15 @@ This document tracks all tasks and features that need to be completed before dep
 
 - [x] Modern doctor search page with filters
 - [x] Improved booking flow
+- [x] Appointment status badges with proper colors and icons
+- [x] Highlighted date/time display on appointments
+- [x] Form validation feedback (prescription form)
+- [x] Time-based button states (disabled with helpful messages)
+- [x] Confirmation dialogs for critical actions
 - [ ] Loading states for all async operations
 - [ ] Error messages improvement
 - [ ] Success confirmations
 - [ ] Empty states design
-- [ ] Form validation feedback
 - [ ] Accessibility improvements
 
 ## 📦 Dependencies & Updates
@@ -248,7 +267,7 @@ This document tracks all tasks and features that need to be completed before dep
 
 ---
 
-**Last Updated:** 2025-01-27
+**Last Updated:** 2025-12-07
 
 ## ✅ Recently Completed Features
 
@@ -276,4 +295,12 @@ This document tracks all tasks and features that need to be completed before dep
 - ✅ Appointment overlap detection
 - ✅ Time validation for past/future appointments
 - ✅ Integration with Zoom for online appointments
+- ✅ Patient name display on doctor appointments page
+- ✅ Highlighted date/time display
+- ✅ Clinic filter count fix
+- ✅ Removed "Online Consultations" as separate clinic category
+- ✅ Appointment status type alignment (PENDING_PAYMENT, IN_PROGRESS, NO_SHOW)
+- ✅ Zoom meeting button visibility and time validation
+- ✅ Prescription creation time validation
+- ✅ Appointment completion confirmation dialog
 

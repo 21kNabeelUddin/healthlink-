@@ -139,6 +139,7 @@ function transformAppointment(backendAppointment: any): Appointment {
     zoomMeetingUrl: backendAppointment.zoomMeetingUrl || backendAppointment.zoomJoinUrl,
     zoomMeetingPassword: backendAppointment.zoomMeetingPassword,
     zoomJoinUrl: backendAppointment.zoomJoinUrl || backendAppointment.zoomMeetingUrl,
+    zoomStartUrl: backendAppointment.zoomStartUrl, // For doctors to start the meeting
     patientId: backendAppointment.patientId ? (typeof backendAppointment.patientId === 'string' ? parseInt(backendAppointment.patientId) : backendAppointment.patientId) : 0,
     patientName: backendAppointment.patientName || '',
     patientEmail: backendAppointment.patientEmail,
@@ -977,6 +978,27 @@ export const adminApi = {
   rejectOrganization: async (organizationId: string, reason: string) => {
     const response = await api.post(`/api/v1/admin/approvals/organizations/${organizationId}/reject`, { reason });
     return response.data;
+  },
+};
+
+// ==================== REVIEWS API ====================
+
+export const reviewsApi = {
+  create: async (data: { appointmentId: string; doctorId: string; rating: number; comments?: string }) => {
+    const response = await api.post('/api/v1/reviews', data);
+    return unwrapResponse(response.data);
+  },
+
+  getByDoctor: async (doctorId: string) => {
+    const response = await api.get(`/api/v1/reviews/doctor/${doctorId}`);
+    const data = unwrapResponse<any[]>(response.data);
+    return Array.isArray(data) ? data : [];
+  },
+
+  getMine: async () => {
+    const response = await api.get('/api/v1/reviews/mine');
+    const data = unwrapResponse<any[]>(response.data);
+    return Array.isArray(data) ? data : [];
   },
 };
 

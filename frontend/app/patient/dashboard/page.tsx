@@ -70,7 +70,7 @@ export default function PatientDashboard() {
   );
 
   const onlineAppointments = appointments.filter((apt) => apt.appointmentType === 'ONLINE').length;
-  const confirmedAppointments = appointments.filter((apt) => apt.status === 'CONFIRMED').length;
+  const inProgressAppointments = appointments.filter((apt) => apt.status === 'IN_PROGRESS').length;
 
   const mapStatus = (
     status: Appointment['status'],
@@ -159,8 +159,8 @@ export default function PatientDashboard() {
               />
               <StatsCard
                 icon={Clock}
-                label="Confirmed Visits"
-                value={confirmedAppointments.toString()}
+                label="In Progress Visits"
+                value={inProgressAppointments.toString()}
                 gradient="from-pink-500 to-rose-500"
               />
             </div>

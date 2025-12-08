@@ -172,7 +172,7 @@ class PrescriptionIntegrationTest extends AbstractIntegrationTest {
         appointment.setFacility(facility);
         appointment.setAppointmentTime(LocalDateTime.now().plusDays(1));
         appointment.setEndTime(LocalDateTime.now().plusDays(1).plusMinutes(30));
-        appointment.setStatus(AppointmentStatus.CONFIRMED);
+        appointment.setStatus(AppointmentStatus.IN_PROGRESS);
         appointment.setNotes("Initial consultation");
         appointment.setReasonForVisit("Spider bite treatment consultation");
         appointment = appointmentRepository.save(appointment);

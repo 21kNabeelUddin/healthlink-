@@ -105,7 +105,7 @@ public class AppointmentService {
         appointment.setServiceOffering(serviceOffering);
         appointment.setAppointmentTime(startTime);
         appointment.setEndTime(endTime);
-        appointment.setStatus(AppointmentStatus.PENDING_PAYMENT);
+        appointment.setStatus(AppointmentStatus.IN_PROGRESS);
         appointment.setReasonForVisit(request.getReasonForVisit());
         appointment.setIsEmergency(isEmergency);
         
@@ -146,12 +146,19 @@ public class AppointmentService {
         if (!appointment.getPatient().getEmail().equals(patientEmail)) {
             throw new RuntimeException("Unauthorized patient");
         }
-        if (appointment.getStatus() != AppointmentStatus.CONFIRMED) {
-            throw new RuntimeException("Appointment must be confirmed before check-in");
+        // Allow check-in if appointment time has started or is in progress
+        LocalDateTime now = LocalDateTime.now();
+        if (appointment.getStatus() == AppointmentStatus.COMPLETED ||
+            appointment.getStatus() == AppointmentStatus.CANCELLED ||
+            appointment.getStatus() == AppointmentStatus.NO_SHOW) {
+            throw new RuntimeException("Cannot check in to a " + appointment.getStatus() + " appointment");
+        }
+        // Auto-set to IN_PROGRESS if appointment time has started
+        if (now.isAfter(appointment.getAppointmentTime()) && appointment.getStatus() != AppointmentStatus.IN_PROGRESS) {
+            appointment.setStatus(AppointmentStatus.IN_PROGRESS);
         }
         Doctor doctor = appointment.getDoctor();
         int earlyCheckInMinutes = doctor.getEarlyCheckinMinutes();
-        LocalDateTime now = LocalDateTime.now();
         if (now.isBefore(appointment.getAppointmentTime().minusMinutes(earlyCheckInMinutes))) {
             throw new RuntimeException("Too early to check in. Please wait.");
         }
@@ -168,9 +175,16 @@ public class AppointmentService {
     public AppointmentResponse staffCheckIn(UUID appointmentId, UUID staffUserId, boolean actorIsDoctor) {
         Appointment appointment = appointmentRepository.findById(appointmentId)
                 .orElseThrow(() -> new RuntimeException("Appointment not found"));
-        if (appointment.getStatus() != AppointmentStatus.CONFIRMED
-                && appointment.getStatus() != AppointmentStatus.IN_PROGRESS) {
-            throw new RuntimeException("Invalid status for staff check-in");
+        // Allow staff check-in if appointment time has started
+        LocalDateTime now = LocalDateTime.now();
+        if (appointment.getStatus() == AppointmentStatus.COMPLETED ||
+            appointment.getStatus() == AppointmentStatus.CANCELLED ||
+            appointment.getStatus() == AppointmentStatus.NO_SHOW) {
+            throw new RuntimeException("Cannot check in to a " + appointment.getStatus() + " appointment");
+        }
+        // Auto-set to IN_PROGRESS if appointment time has started
+        if (now.isAfter(appointment.getAppointmentTime()) && appointment.getStatus() != AppointmentStatus.IN_PROGRESS) {
+            appointment.setStatus(AppointmentStatus.IN_PROGRESS);
         }
         Staff assignedStaff = appointment.getAssignedStaff();
         if (assignedStaff == null) {
@@ -181,7 +195,6 @@ public class AppointmentService {
                 throw new RuntimeException("Only the assigned staff member can check in");
             }
         }
-        LocalDateTime now = LocalDateTime.now();
         appointment.setStaffCheckInTime(now);
         updateStatusBasedOnCheckIns(appointment, now);
         return mapToResponse(appointmentRepository.save(appointment));
@@ -225,9 +238,7 @@ public class AppointmentService {
             appointment.setStaffCheckInTime(null);
             appointment.setIsCheckedIn(false);
             appointment.setCheckInTime(null);
-            if (appointment.getStatus() == AppointmentStatus.IN_PROGRESS) {
-                appointment.setStatus(AppointmentStatus.CONFIRMED);
-            }
+            // Status remains IN_PROGRESS when patient checks out early
         }
         return mapToResponse(appointmentRepository.save(appointment));
     }
@@ -236,8 +247,9 @@ public class AppointmentService {
         Appointment appointment = appointmentRepository.findById(appointmentId)
                 .orElseThrow(() -> new RuntimeException("Appointment not found"));
         if (appointment.getStatus() == AppointmentStatus.COMPLETED
-                || appointment.getStatus() == AppointmentStatus.CANCELLED) {
-            throw new RuntimeException("Cannot cancel already completed or cancelled appointment");
+                || appointment.getStatus() == AppointmentStatus.CANCELLED
+                || appointment.getStatus() == AppointmentStatus.NO_SHOW) {
+            throw new RuntimeException("Cannot cancel already completed, cancelled, or no-show appointment");
         }
         appointment.setStatus(AppointmentStatus.CANCELLED);
         appointment.setReasonForVisit(appointment.getReasonForVisit() + " [CANCELLED: " + cancelReason + "]");
@@ -247,30 +259,84 @@ public class AppointmentService {
         return mapToResponse(saved);
     }
 
+    public AppointmentResponse markNoShow(UUID appointmentId, String reason) {
+        Appointment appointment = appointmentRepository.findById(appointmentId)
+                .orElseThrow(() -> new RuntimeException("Appointment not found"));
+        
+        // Only allow marking as no show if appointment time has passed and meeting duration has elapsed
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime appointmentEndTime = appointment.getEndTime();
+        
+        if (appointment.getStatus() == AppointmentStatus.COMPLETED
+                || appointment.getStatus() == AppointmentStatus.CANCELLED
+                || appointment.getStatus() == AppointmentStatus.NO_SHOW) {
+            throw new RuntimeException("Cannot mark as no-show: appointment is already " + appointment.getStatus());
+        }
+        
+        if (now.isBefore(appointmentEndTime)) {
+            throw new RuntimeException("Cannot mark as no-show: appointment time has not elapsed yet");
+        }
+        
+        appointment.setStatus(AppointmentStatus.NO_SHOW);
+        String noShowReason = reason != null ? reason : "Patient did not show up";
+        appointment.setReasonForVisit(appointment.getReasonForVisit() + " [NO_SHOW: " + noShowReason + "]");
+        Appointment saved = appointmentRepository.save(appointment);
+        // Publish no-show event
+        webhookPublisherService.publish(EventType.APPOINTMENT_CANCELED, saved.getId().toString());
+        return mapToResponse(saved);
+    }
+
     public AppointmentResponse completeAppointment(UUID appointmentId) {
         Appointment appointment = appointmentRepository.findById(appointmentId)
                 .orElseThrow(() -> new RuntimeException("Appointment not found"));
 
-        if (appointment.getStatus() != AppointmentStatus.IN_PROGRESS
-                && appointment.getStatus() != AppointmentStatus.CONFIRMED) {
-            // Allow completing from CONFIRMED if check-in was skipped or implicit
+        if (appointment.getStatus() != AppointmentStatus.IN_PROGRESS) {
+            throw new RuntimeException("Appointment must be in progress to complete");
         }
 
         appointment.setStatus(AppointmentStatus.COMPLETED);
         return mapToResponse(appointmentRepository.save(appointment));
     }
 
-    public java.util.List<AppointmentResponse> listAppointments(String email) {
+    public java.util.List<AppointmentResponse> listAppointments(String email, String status) {
         var user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         java.util.List<Appointment> appointments;
+        // Use native queries that filter invalid statuses to prevent deserialization errors
         if (user.getRole() == com.healthlink.domain.user.enums.UserRole.PATIENT) {
-            appointments = appointmentRepository.findByPatientId(user.getId());
+            appointments = appointmentRepository.findByPatientIdWithValidStatus(user.getId());
         } else if (user.getRole() == com.healthlink.domain.user.enums.UserRole.DOCTOR) {
-            appointments = appointmentRepository.findByDoctorId(user.getId());
+            appointments = appointmentRepository.findByDoctorIdWithValidStatus(user.getId());
         } else {
             return java.util.Collections.emptyList();
+        }
+
+        // Auto-update status to IN_PROGRESS for appointments that have started
+        // Only update if not already in a final state
+        LocalDateTime now = LocalDateTime.now();
+        for (Appointment apt : appointments) {
+            // Only auto-update if appointment time has started and status is not final
+            if (apt.getStatus() != AppointmentStatus.IN_PROGRESS &&
+                apt.getStatus() != AppointmentStatus.COMPLETED &&
+                apt.getStatus() != AppointmentStatus.CANCELLED &&
+                apt.getStatus() != AppointmentStatus.NO_SHOW &&
+                now.isAfter(apt.getAppointmentTime())) {
+                apt.setStatus(AppointmentStatus.IN_PROGRESS);
+                appointmentRepository.save(apt);
+            }
+        }
+
+        // Filter by status if provided
+        if (status != null && !status.isEmpty()) {
+            try {
+                AppointmentStatus statusEnum = AppointmentStatus.valueOf(status);
+                appointments = appointments.stream()
+                        .filter(apt -> apt.getStatus() == statusEnum)
+                        .collect(java.util.stream.Collectors.toList());
+            } catch (IllegalArgumentException e) {
+                // Invalid status, return all appointments
+            }
         }
 
         return appointments.stream()

@@ -132,7 +132,16 @@ public class PaymentService {
         // Update appointment status based on payment verification
         if (payment.getStatus() == PaymentStatus.VERIFIED || payment.getStatus() == PaymentStatus.CAPTURED) {
             Appointment appointment = payment.getAppointment();
-            appointment.setStatus(AppointmentStatus.CONFIRMED);
+            // Auto-set to IN_PROGRESS if appointment time has started, otherwise keep current status
+            LocalDateTime now = LocalDateTime.now();
+            if (now.isAfter(appointment.getAppointmentTime()) && appointment.getStatus() != AppointmentStatus.IN_PROGRESS) {
+                appointment.setStatus(AppointmentStatus.IN_PROGRESS);
+            } else if (appointment.getStatus() != AppointmentStatus.IN_PROGRESS && 
+                       appointment.getStatus() != AppointmentStatus.COMPLETED &&
+                       appointment.getStatus() != AppointmentStatus.CANCELLED &&
+                       appointment.getStatus() != AppointmentStatus.NO_SHOW) {
+                appointment.setStatus(AppointmentStatus.IN_PROGRESS);
+            }
             appointmentRepository.save(appointment);
 
             // Emit webhook for successful verification

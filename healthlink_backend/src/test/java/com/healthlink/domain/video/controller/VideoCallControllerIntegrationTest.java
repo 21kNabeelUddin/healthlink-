@@ -187,7 +187,7 @@ class VideoCallControllerIntegrationTest extends AbstractIntegrationTest {
         appointment.setPatient(patient);
         appointment.setAppointmentTime(LocalDateTime.now());
         appointment.setEndTime(LocalDateTime.now().plusHours(1));
-        appointment.setStatus(AppointmentStatus.CONFIRMED);
+        appointment.setStatus(AppointmentStatus.IN_PROGRESS);
         appointment.setPatientCheckInTime(LocalDateTime.now()); // Patient checked in
         appointment = appointmentRepository.save(appointment);
 

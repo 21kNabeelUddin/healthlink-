@@ -111,7 +111,7 @@ class AppointmentServiceTest {
         AppointmentResponse response = appointmentService.createAppointment(testRequest, testPatient.getEmail());
 
         assertThat(response).isNotNull();
-        assertThat(response.getStatus()).isEqualTo(AppointmentStatus.PENDING_PAYMENT.name());
+        assertThat(response.getStatus()).isEqualTo(AppointmentStatus.IN_PROGRESS.name());
         verify(appointmentRepository).save(any(Appointment.class));
     }
 
@@ -172,7 +172,7 @@ class AppointmentServiceTest {
     @Test
     void patientCheckIn_shouldUpdatePatientCheckInTime() {
         Appointment appointment = createTestAppointment();
-        appointment.setStatus(AppointmentStatus.CONFIRMED);
+        appointment.setStatus(AppointmentStatus.IN_PROGRESS);
         appointment.setAppointmentTime(LocalDateTime.now().plusMinutes(10));
 
         when(appointmentRepository.findById(appointment.getId())).thenReturn(Optional.of(appointment));
@@ -188,7 +188,7 @@ class AppointmentServiceTest {
     @Test
     void patientCheckIn_shouldThrowWhenTooEarly() {
         Appointment appointment = createTestAppointment();
-        appointment.setStatus(AppointmentStatus.CONFIRMED);
+        appointment.setStatus(AppointmentStatus.IN_PROGRESS);
         appointment.setAppointmentTime(LocalDateTime.now().plusHours(2));
 
         when(appointmentRepository.findById(appointment.getId())).thenReturn(Optional.of(appointment));
@@ -201,7 +201,7 @@ class AppointmentServiceTest {
     @Test
     void patientCheckIn_shouldThrowWhenNotConfirmed() {
         Appointment appointment = createTestAppointment();
-        appointment.setStatus(AppointmentStatus.PENDING_PAYMENT);
+        appointment.setStatus(AppointmentStatus.IN_PROGRESS);
 
         when(appointmentRepository.findById(appointment.getId())).thenReturn(Optional.of(appointment));
 
@@ -213,7 +213,7 @@ class AppointmentServiceTest {
     @Test
     void staffCheckIn_shouldUpdateStaffCheckInTime() {
         Appointment appointment = createTestAppointment();
-        appointment.setStatus(AppointmentStatus.CONFIRMED);
+        appointment.setStatus(AppointmentStatus.IN_PROGRESS);
         appointment.setPatientCheckInTime(LocalDateTime.now());
         Staff staff = new Staff();
         staff.setId(UUID.randomUUID());
@@ -231,7 +231,7 @@ class AppointmentServiceTest {
     @Test
     void staffCheckIn_shouldRejectUnassignedStaff() {
         Appointment appointment = createTestAppointment();
-        appointment.setStatus(AppointmentStatus.CONFIRMED);
+        appointment.setStatus(AppointmentStatus.IN_PROGRESS);
         Staff staff = new Staff();
         staff.setId(UUID.randomUUID());
         appointment.setAssignedStaff(staff);
@@ -246,7 +246,7 @@ class AppointmentServiceTest {
     @Test
     void reschedule_shouldUpdateAppointmentTime() {
         Appointment appointment = createTestAppointment();
-        appointment.setStatus(AppointmentStatus.CONFIRMED);
+        appointment.setStatus(AppointmentStatus.IN_PROGRESS);
         LocalDateTime newTime = LocalDateTime.now().plusDays(2);
 
         when(appointmentRepository.findById(appointment.getId())).thenReturn(Optional.of(appointment));
@@ -274,7 +274,7 @@ class AppointmentServiceTest {
     @Test
     void cancel_shouldUpdateStatusToCancelled() {
         Appointment appointment = createTestAppointment();
-        appointment.setStatus(AppointmentStatus.CONFIRMED);
+        appointment.setStatus(AppointmentStatus.IN_PROGRESS);
 
         when(appointmentRepository.findById(appointment.getId())).thenReturn(Optional.of(appointment));
         when(appointmentRepository.save(any())).thenAnswer(i -> i.getArgument(0));
@@ -305,7 +305,7 @@ class AppointmentServiceTest {
         when(userRepository.findByEmail(testPatient.getEmail())).thenReturn(Optional.of(testPatient));
         when(appointmentRepository.findByPatientId(testPatient.getId())).thenReturn(appointments);
 
-        List<AppointmentResponse> result = appointmentService.listAppointments(testPatient.getEmail());
+        List<AppointmentResponse> result = appointmentService.listAppointments(testPatient.getEmail(), null);
 
         assertThat(result).hasSize(2);
     }
@@ -318,7 +318,7 @@ class AppointmentServiceTest {
         appointment.setFacility(testFacility);
         appointment.setAppointmentTime(LocalDateTime.now().plusDays(1));
         appointment.setEndTime(LocalDateTime.now().plusDays(1).plusMinutes(30));
-        appointment.setStatus(AppointmentStatus.PENDING_PAYMENT);
+        appointment.setStatus(AppointmentStatus.IN_PROGRESS);
         return appointment;
     }
 }

@@ -15,6 +15,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 
 @Component
 @RequiredArgsConstructor
@@ -37,9 +38,9 @@ public class NotificationScheduler {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime oneHourLater = now.plusHours(1);
         
-        // Fetch confirmed appointments in next hour
-        var upcomingAppointments = appointmentRepository
-            .findByAppointmentTimeBetweenAndStatus(now, oneHourLater, AppointmentStatus.CONFIRMED);
+        // Fetch in-progress appointments in next hour
+        List<Appointment> upcomingAppointments = appointmentRepository
+            .findByAppointmentTimeBetweenAndStatus(now, oneHourLater, AppointmentStatus.IN_PROGRESS);
         
         int notificationsCreated = 0;
         for (Appointment appt : upcomingAppointments) {

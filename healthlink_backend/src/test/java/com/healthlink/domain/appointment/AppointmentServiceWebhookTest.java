@@ -107,7 +107,7 @@ class AppointmentServiceWebhookTest {
         appointment.setFacility(facility);
         appointment.setAppointmentTime(LocalDateTime.now().plusDays(1));
         appointment.setEndTime(LocalDateTime.now().plusDays(1).plusMinutes(30));
-        appointment.setStatus(AppointmentStatus.PENDING_PAYMENT);
+        appointment.setStatus(AppointmentStatus.IN_PROGRESS);
         appointment.setReasonForVisit("Routine checkup");
 
         // Setup create request

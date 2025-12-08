@@ -20,16 +20,16 @@ export function ActiveAppointmentPrescriptionMonitor({
   autoRedirect = true,
   redirectDelay = 5000,
 }: ActiveAppointmentPrescriptionMonitorProps) {
-  // Find active online appointments (CONFIRMED status, ONLINE type, current or future time)
+  // Find active online appointments (IN_PROGRESS status, ONLINE type, current or future time)
   const activeAppointments = useMemo(() => {
     const now = new Date();
     return appointments.filter((apt) => {
       const isOnline = apt.appointmentType === 'ONLINE';
-      const isConfirmed = apt.status === 'CONFIRMED';
+      const isInProgress = apt.status === 'IN_PROGRESS';
       const appointmentTime = new Date(apt.appointmentDateTime);
       const isActive = appointmentTime <= now && appointmentTime.getTime() + 2 * 60 * 60 * 1000 >= now.getTime(); // Within 2 hours of appointment time
       
-      return isOnline && isConfirmed && isActive;
+      return isOnline && isInProgress && isActive;
     });
   }, [appointments]);
 

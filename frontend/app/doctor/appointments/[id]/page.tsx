@@ -66,26 +66,48 @@ export default function DoctorAppointmentDetailPage() {
 
       if (apt?.patientId) {
         const [rxByApt, medicalHistory] = await Promise.all([
-          prescriptionsApi.getByAppointmentId(appointmentId as string),
-          medicalRecordsApi.listForPatient(apt.patientId.toString()),
+          prescriptionsApi.getByAppointmentId(appointmentId), // This now returns null on 404, not an error
+          medicalRecordsApi.listForPatient(String(apt.patientId)).catch((err) => {
+            console.error('Failed to load medical history:', err);
+            return []; // Return empty array on error
+          }),
         ]);
         setPrescription(rxByApt);
         setHistory(Array.isArray(medicalHistory) ? medicalHistory : []);
       }
-    } catch (error) {
-      toast.error('Failed to load appointment details');
-      console.error(error);
+    } catch (error: any) {
+      console.error('Appointment detail load error:', error);
+      console.error('Error response:', error?.response);
+      console.error('Error status:', error?.response?.status);
+      console.error('Error data:', error?.response?.data);
+      
+      let errorMessage = 'Failed to load appointment details';
+      
+      if (error?.response?.status === 404) {
+        errorMessage = 'Appointment not found. It may have been deleted or you may not have permission to view it.';
+      } else if (error?.response?.status === 403) {
+        errorMessage = 'You do not have permission to view this appointment.';
+      } else if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      
+      toast.error(errorMessage);
+      
+      // Redirect back to appointments list if appointment not found or unauthorized
+      if (error?.response?.status === 404 || error?.response?.status === 403) {
+        setTimeout(() => {
+          router.push('/doctor/appointments');
+        }, 2000);
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
   const canStartMeeting = (appointmentDateTime?: string): boolean => {
-    if (!appointmentDateTime) return false;
-    const appointmentTime = new Date(appointmentDateTime);
-    const now = new Date();
-    const fiveMinutesBefore = new Date(appointmentTime.getTime() - 5 * 60 * 1000);
-    return now >= fiveMinutesBefore;
+    return true; // No time restrictions - doctors can join whenever
   };
 
   const hasAppointmentStarted = (appointmentDateTime?: string): boolean => {
@@ -96,7 +118,21 @@ export default function DoctorAppointmentDetailPage() {
   };
 
   const isActiveAppointment = (status: AppointmentStatus): boolean => {
-    return status === 'PENDING_PAYMENT' || status === 'CONFIRMED' || status === 'IN_PROGRESS';
+    return status === 'IN_PROGRESS';
+  };
+
+  const canMarkNoShow = (appointment?: Appointment): boolean => {
+    if (!appointment) return false;
+    // Use endTime if available, otherwise calculate (30 minutes default duration)
+    let endTime: Date;
+    if (appointment.endTime) {
+      endTime = new Date(appointment.endTime);
+    } else {
+      const appointmentTime = new Date(appointment.appointmentDateTime);
+      endTime = new Date(appointmentTime.getTime() + 30 * 60 * 1000); // 30 minutes default
+    }
+    const now = new Date();
+    return now >= endTime; // Can mark no show only after appointment end time
   };
 
   const getStatusLabel = (status: string) =>
@@ -107,10 +143,6 @@ export default function DoctorAppointmentDetailPage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'CONFIRMED':
-        return 'bg-green-100 text-green-800 border-green-200';
-      case 'PENDING_PAYMENT':
-        return 'bg-amber-100 text-amber-800 border-amber-200';
       case 'IN_PROGRESS':
         return 'bg-blue-100 text-blue-800 border-blue-200';
       case 'CANCELLED':
@@ -126,6 +158,49 @@ export default function DoctorAppointmentDetailPage() {
 
   const handleComplete = async () => {
     if (!appointment) return;
+    
+    // Check if prescription exists
+    if (!prescription) {
+      toast.error(
+        (t) => (
+          <div className="flex flex-col gap-2 max-w-md">
+            <p className="font-semibold text-base">Prescription Required</p>
+            <p className="text-sm text-slate-700">
+              You must create a prescription before concluding this appointment.
+            </p>
+            <div className="flex gap-2 mt-2">
+              <button
+                onClick={() => {
+                  toast.dismiss(t.id);
+                  router.push(`/doctor/prescriptions/new?appointmentId=${appointment.id}&patientId=${patientId}`);
+                }}
+                className="px-4 py-2 bg-teal-600 text-white rounded-lg text-sm font-medium hover:bg-teal-700 transition-colors"
+              >
+                Create Prescription Now
+              </button>
+              <button
+                onClick={() => toast.dismiss(t.id)}
+                className="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-300 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ),
+        { duration: 10000, icon: '⚠️' }
+      );
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Are you sure you want to conclude this appointment?\n\n` +
+      `Patient: ${appointment.patientName}\n` +
+      `Date: ${format(new Date(appointment.appointmentDateTime), 'MMM dd, yyyy h:mm a')}\n\n` +
+      `This action cannot be undone.`
+    );
+
+    if (!confirmed) return;
+
     setIsCompleting(true);
     try {
       await appointmentsApi.complete(appointment.id.toString());
@@ -135,6 +210,58 @@ export default function DoctorAppointmentDetailPage() {
       toast.error(error?.response?.data?.message || 'Failed to conclude appointment');
     } finally {
       setIsCompleting(false);
+    }
+  };
+
+  const handleCancel = async () => {
+    if (!appointment) return;
+    
+    const reason = window.prompt(
+      `Are you sure you want to cancel this appointment?\n\n` +
+      `Patient: ${appointment.patientName}\n` +
+      `Date: ${format(new Date(appointment.appointmentDateTime), 'MMM dd, yyyy h:mm a')}\n\n` +
+      `Please provide a reason for cancellation (optional):`
+    );
+
+    if (reason === null) return; // User cancelled
+
+    try {
+      await appointmentsApi.cancel(appointment.id.toString(), reason || 'Cancelled by doctor');
+      toast.success('Appointment cancelled successfully');
+      router.push('/doctor/appointments');
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || 'Failed to cancel appointment');
+    }
+  };
+
+  const handleMarkNoShow = async () => {
+    if (!appointment) return;
+    
+    // Calculate end time (assuming 30 minutes duration if not available)
+    const appointmentTime = new Date(appointment.appointmentDateTime);
+    const endTime = new Date(appointmentTime.getTime() + 30 * 60 * 1000); // 30 minutes default
+    const now = new Date();
+
+    if (now < endTime) {
+      toast.error('Cannot mark as no-show: Appointment time has not elapsed yet');
+      return;
+    }
+
+    const reason = window.prompt(
+      `Mark this appointment as No Show?\n\n` +
+      `Patient: ${appointment.patientName}\n` +
+      `Date: ${format(new Date(appointment.appointmentDateTime), 'MMM dd, yyyy h:mm a')}\n\n` +
+      `Please provide a reason (optional):`
+    );
+
+    if (reason === null) return; // User cancelled
+
+    try {
+      await appointmentsApi.markNoShow(appointment.id.toString(), reason || 'Patient did not show up');
+      toast.success('Appointment marked as no-show');
+      router.push('/doctor/appointments');
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || 'Failed to mark as no-show');
     }
   };
 
@@ -254,7 +381,7 @@ export default function DoctorAppointmentDetailPage() {
               {appointment.appointmentType === 'ONLINE' && (
                 <Button
                   variant="primary"
-                  disabled={!appointment.zoomStartUrl || !canStartMeeting(appointment.appointmentDateTime)}
+                  disabled={!appointment.zoomStartUrl}
                   className="flex items-center gap-2"
                   asChild
                 >
@@ -302,6 +429,34 @@ export default function DoctorAppointmentDetailPage() {
                   </Button>
                 </>
               )}
+
+              {/* Cancel and No Show buttons - available for all non-final statuses */}
+              {appointment.status !== 'COMPLETED' && 
+               appointment.status !== 'CANCELLED' && 
+               appointment.status !== 'NO_SHOW' && (
+                <>
+                  <Button
+                    variant="outline"
+                    className="flex items-center gap-2 border-red-300 text-red-700 hover:bg-red-50"
+                    onClick={handleCancel}
+                  >
+                    <XCircle className="w-4 h-4" />
+                    Cancel Appointment
+                  </Button>
+
+                  {/* No Show - only available after appointment end time */}
+                  {canMarkNoShow(appointment) && (
+                    <Button
+                      variant="outline"
+                      className="flex items-center gap-2 border-gray-300 text-gray-700 hover:bg-gray-50"
+                      onClick={handleMarkNoShow}
+                    >
+                      <XCircle className="w-4 h-4" />
+                      Mark as No Show
+                    </Button>
+                  )}
+                </>
+              )}
             </div>
           </Card>
 
@@ -329,7 +484,7 @@ export default function DoctorAppointmentDetailPage() {
                         <Badge variant="outline">{h.status.replace('_', ' ')}</Badge>
                       </div>
                       <p className="text-xs text-slate-500 mt-1">
-                        Diagnosed: {format(new Date(h.diagnosisDate), 'MMM dd, yyyy')}
+                        Diagnosed: {formatDateSafe(h.diagnosisDate)}
                       </p>
                       <p className="text-sm text-slate-700 mt-1 line-clamp-2">{h.description}</p>
                     </div>
@@ -356,7 +511,7 @@ export default function DoctorAppointmentDetailPage() {
                 <div className="space-y-2">
                   <div className="flex flex-wrap items-center gap-2 text-sm text-slate-700">
                     <Badge variant="outline" className="bg-white text-slate-700 border-slate-200">
-                      {format(new Date(prescription.createdAt || ''), 'MMM dd, yyyy')}
+                      {formatDateSafe(prescription.createdAt)}
                     </Badge>
                     {prescription.clinicName && (
                       <Badge variant="outline" className="bg-white text-slate-700 border-slate-200">
@@ -398,4 +553,3 @@ export default function DoctorAppointmentDetailPage() {
     </DashboardLayout>
   );
 }
-

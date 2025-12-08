@@ -16,7 +16,6 @@ export const doctorSidebarItems = [
   { icon: Stethoscope, label: 'Emergency', href: '/doctor/emergency/new' },
   { icon: FileText, label: 'Prescriptions', href: '/doctor/prescriptions' },
   { icon: Activity, label: 'Analytics', href: '/doctor/analytics' },
-  { icon: CreditCard, label: 'Payments', href: '/doctor/payments' },
   { icon: Shield, label: 'Profile', href: '/doctor/profile' },
 ];
 

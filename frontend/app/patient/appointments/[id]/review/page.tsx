@@ -39,7 +39,7 @@ export default function ReviewAppointmentPage() {
       const apt = await appointmentsApi.getById(appointmentId);
       
       // Verify appointment belongs to patient and is completed
-      if (apt.patientId.toString() !== user?.id) {
+      if (apt.patientId !== user?.id?.toString()) {
         toast.error('You can only review your own appointments');
         router.push('/patient/appointments');
         return;
@@ -75,7 +75,7 @@ export default function ReviewAppointmentPage() {
     try {
       await reviewsApi.create({
         appointmentId: appointment.id.toString(),
-        doctorId: appointment.doctorId.toString(),
+        doctorId: appointment.doctorId, // Already a UUID string
         rating,
         comments: comments.trim() || undefined,
       });
@@ -251,7 +251,11 @@ export default function ReviewAppointmentPage() {
                 <Button
                   type="button"
                   variant="secondary"
-                  onClick={() => router.push('/patient/appointments')}
+                  onClick={() => {
+                    // Mark that user skipped this review to prevent auto-redirect loop
+                    sessionStorage.setItem('skippedReviewId', appointmentId);
+                    router.push('/patient/appointments');
+                  }}
                   className="flex-1"
                 >
                   Skip for Now

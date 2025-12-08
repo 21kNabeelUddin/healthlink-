@@ -197,12 +197,9 @@ export default function DoctorAppointmentsPage() {
     });
   }, [filteredAppointmentsBySearch, clinics, selectedClinicFilter, user?.id]);
 
-  // Helper function to check if meeting can be started (5 minutes before start time)
+  // Helper function to check if meeting can be started (no time restrictions)
   const canStartMeeting = (appointmentDateTime: string): boolean => {
-    const appointmentTime = new Date(appointmentDateTime);
-    const now = new Date();
-    const fiveMinutesBefore = new Date(appointmentTime.getTime() - 5 * 60 * 1000);
-    return now >= fiveMinutesBefore;
+    return true; // No time restrictions - doctors can join whenever
   };
 
   // Helper function to check if appointment time has started (for prescription creation)
@@ -214,7 +211,7 @@ export default function DoctorAppointmentsPage() {
 
   // Helper function to check if appointment is active (can be worked on)
   const isActiveAppointment = (status: string): boolean => {
-    return status === 'PENDING_PAYMENT' || status === 'CONFIRMED' || status === 'IN_PROGRESS';
+    return status === 'IN_PROGRESS';
   };
 
   const handleAppointmentAction = async (appointmentId: string, action: 'confirm' | 'reject' | 'complete') => {
@@ -329,7 +326,7 @@ export default function DoctorAppointmentsPage() {
           loadAppointments(); // Refresh the list
           break;
       }
-      loadAppointments();
+        loadAppointments();
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to perform action');
     }
@@ -337,10 +334,6 @@ export default function DoctorAppointmentsPage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'CONFIRMED':
-        return 'bg-green-100 text-green-800 border-green-200';
-      case 'PENDING_PAYMENT':
-        return 'bg-amber-100 text-amber-800 border-amber-200';
       case 'IN_PROGRESS':
         return 'bg-blue-100 text-blue-800 border-blue-200';
       case 'CANCELLED':
@@ -356,11 +349,8 @@ export default function DoctorAppointmentsPage() {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'CONFIRMED':
       case 'IN_PROGRESS':
         return <CheckCircle2 className="w-4 h-4" />;
-      case 'PENDING_PAYMENT':
-        return <AlertCircle className="w-4 h-4" />;
       case 'CANCELLED':
       case 'NO_SHOW':
         return <XCircle className="w-4 h-4" />;
@@ -398,7 +388,7 @@ export default function DoctorAppointmentsPage() {
       <div className="min-h-screen bg-gradient-to-b from-blue-50 via-white to-blue-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Header */}
-          <div className="mb-8">
+      <div className="mb-8">
             <h1 className="text-4xl font-bold text-slate-900 mb-2">Appointments</h1>
             <p className="text-slate-600">Manage your appointments by clinic</p>
           </div>
@@ -420,26 +410,24 @@ export default function DoctorAppointmentsPage() {
                       className="pl-3 pr-3 py-2"
                     />
                   </div>
-                </div>
+      </div>
 
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">
                     Status
                   </label>
-                  <select
-                    value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value)}
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
                     className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                  >
-                    <option value="">All Statuses</option>
-                    <option value="PENDING_PAYMENT">Pending Payment</option>
-                    <option value="CONFIRMED">Confirmed</option>
-                    <option value="IN_PROGRESS">In Progress</option>
-                    <option value="COMPLETED">Completed</option>
-                    <option value="CANCELLED">Cancelled</option>
-                    <option value="NO_SHOW">No Show</option>
-                  </select>
-                </div>
+        >
+          <option value="">All Statuses</option>
+          <option value="IN_PROGRESS">In Progress</option>
+          <option value="COMPLETED">Completed</option>
+          <option value="CANCELLED">Cancelled</option>
+          <option value="NO_SHOW">No Show</option>
+        </select>
+      </div>
 
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-2">
@@ -476,9 +464,9 @@ export default function DoctorAppointmentsPage() {
                     ? 'Try adjusting your filters'
                     : 'You have no appointments yet'}
                 </p>
-              </div>
-            </Card>
-          ) : (
+            </div>
+          </Card>
+        ) : (
             <div className="space-y-6">
               {clinicsWithAppointments.map((clinic) => (
                 <Card key={clinic.id} className="overflow-hidden">
@@ -489,8 +477,8 @@ export default function DoctorAppointmentsPage() {
                         <div className="w-12 h-12 bg-gradient-to-br from-teal-500 to-violet-600 rounded-lg flex items-center justify-center flex-shrink-0">
                           <Building2 className="w-6 h-6 text-white" />
                         </div>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
                             <h2 className="text-2xl font-bold text-slate-900">{clinic.name}</h2>
                             <Badge variant="default" className="bg-teal-500 text-white">
                               {clinic.appointments.length} appointment{clinic.appointments.length !== 1 ? 's' : ''}
@@ -560,14 +548,14 @@ export default function DoctorAppointmentsPage() {
                                       {format(new Date(appointment.appointmentDateTime), 'MMM dd, yyyy • h:mm a')}
                                     </span>
                                   </div>
-                                  {appointment.clinicName && (
+                    {appointment.clinicName && (
                                     <div className="flex items-center gap-2">
                                       <Building2 className="w-4 h-4 text-slate-500" />
                                       <span>{appointment.clinicName}</span>
                                     </div>
-                                  )}
-                                </div>
-                              </div>
+                    )}
+                  </div>
+                </div>
 
                               <div className="flex items-center">
                                 <Link
@@ -582,12 +570,12 @@ export default function DoctorAppointmentsPage() {
                           </div>
                         ))}
                       </div>
-                    )}
-                  </div>
+                  )}
+                </div>
                 </Card>
               ))}
-            </div>
-          )}
+              </div>
+        )}
         </div>
       </div>
     </DashboardLayout>

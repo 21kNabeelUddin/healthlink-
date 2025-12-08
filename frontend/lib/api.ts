@@ -131,20 +131,21 @@ function unwrapResponse<T = any>(raw: any): T {
   return {
     id: backendAppointment.id?.toString() || String(backendAppointment.id) || '',
     appointmentDateTime: appointmentDateTime,
+    endTime: backendAppointment.endTime || backendAppointment.end_time,
     reason: backendAppointment.notes || backendAppointment.reasonForVisit || backendAppointment.reason || '',
     notes: notes, // Clean notes without the type prefix
-    status: (backendAppointment.status || 'PENDING') as AppointmentStatus,
+    status: (backendAppointment.status || 'IN_PROGRESS') as AppointmentStatus,
     appointmentType: appointmentType,
     zoomMeetingId: backendAppointment.zoomMeetingId,
     zoomMeetingUrl: backendAppointment.zoomMeetingUrl || backendAppointment.zoomJoinUrl,
     zoomMeetingPassword: backendAppointment.zoomMeetingPassword,
     zoomJoinUrl: backendAppointment.zoomJoinUrl || backendAppointment.zoomMeetingUrl,
     zoomStartUrl: backendAppointment.zoomStartUrl, // For doctors to start the meeting
-    // Keep patientId as string UUID to align with backend expectations
+    // Keep patientId and doctorId as string UUIDs to align with backend expectations
     patientId: backendAppointment.patientId ? String(backendAppointment.patientId) : '',
     patientName: backendAppointment.patientName || '',
     patientEmail: backendAppointment.patientEmail,
-    doctorId: backendAppointment.doctorId ? (typeof backendAppointment.doctorId === 'string' ? parseInt(backendAppointment.doctorId) : backendAppointment.doctorId) : 0,
+    doctorId: backendAppointment.doctorId ? String(backendAppointment.doctorId) : '',
     doctorName: backendAppointment.doctorName || '',
     doctorSpecialization: backendAppointment.doctorSpecialization,
     // Keep facilityId as string (UUID) - don't convert to number
@@ -469,6 +470,13 @@ export const appointmentsApi = {
     const result = unwrapResponse<any>(response.data);
     return transformAppointment(result);
   },
+
+  markNoShow: async (id: string, reason?: string) => {
+    const params = reason ? { reason } : {};
+    const response = await api.patch(`/api/v1/appointments/${id}/no-show`, null, { params });
+    const result = unwrapResponse<any>(response.data);
+    return transformAppointment(result);
+  },
 };
 
 // ==================== PRESCRIPTIONS API ====================
@@ -492,11 +500,17 @@ export const prescriptionsApi = {
   },
 
   getByAppointmentId: async (appointmentId: string) => {
-    const response = await api.get(`/api/v1/prescriptions/appointment/${appointmentId}`);
-    if (response.status === 404) {
-      return null;
+    try {
+      const response = await api.get(`/api/v1/prescriptions/appointment/${appointmentId}`);
+      return unwrapResponse(response.data);
+    } catch (error: any) {
+      // 404 means no prescription found for this appointment - this is normal
+      if (error?.response?.status === 404) {
+        return null;
+      }
+      // Re-throw other errors
+      throw error;
     }
-    return unwrapResponse(response.data);
   },
 
   checkInteractions: async (data: any) => {

@@ -167,7 +167,7 @@ class AppointmentIntegrationTest extends AbstractIntegrationTest {
                 .log().body()
                 .statusCode(HttpStatus.OK.value())
                 .body("data.id", notNullValue())
-                .body("data.status", equalTo("PENDING_PAYMENT"));
+                .body("data.status", equalTo("IN_PROGRESS"));
     }
 
     @Test

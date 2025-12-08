@@ -27,9 +27,27 @@ export default function AppointmentsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [reviewedAppointments, setReviewedAppointments] = useState<Set<string>>(new Set());
   const hasCheckedReviews = useRef(false);
+  const autoRedirectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const checkReviews = async (appts: Appointment[]) => {
     if (!user?.id || hasCheckedReviews.current) return;
+    
+    // Check if user just skipped a review (prevent infinite redirect loop)
+    const skippedReviewId = sessionStorage.getItem('skippedReviewId');
+    if (skippedReviewId) {
+      sessionStorage.removeItem('skippedReviewId');
+      hasCheckedReviews.current = true;
+      // Still check reviews but don't auto-redirect
+      try {
+        const myReviews = await reviewsApi.getMine();
+        const reviewedIds = new Set(myReviews.map((r: any) => r.appointmentId?.toString()));
+        setReviewedAppointments(reviewedIds);
+      } catch (error) {
+        console.error('Failed to check reviews:', error);
+      }
+      return;
+    }
+    
     hasCheckedReviews.current = true;
     
     try {
@@ -50,12 +68,19 @@ export default function AppointmentsPage() {
             duration: 5000,
             action: {
               label: 'Rate Now',
-              onClick: () => router.push(`/patient/appointments/${firstCompleted.id}/review`),
+              onClick: () => {
+                if (autoRedirectTimeoutRef.current) {
+                  clearTimeout(autoRedirectTimeoutRef.current);
+                  autoRedirectTimeoutRef.current = null;
+                }
+                router.push(`/patient/appointments/${firstCompleted.id}/review`);
+              },
             },
           });
           // Auto-redirect after 5 seconds if user doesn't click
-          setTimeout(() => {
+          autoRedirectTimeoutRef.current = setTimeout(() => {
             router.push(`/patient/appointments/${firstCompleted.id}/review`);
+            autoRedirectTimeoutRef.current = null;
           }, 5000);
         }, 1000);
       }
@@ -91,11 +116,16 @@ export default function AppointmentsPage() {
   };
 
   const handleCancel = async (appointmentId: number | string) => {
-    if (!confirm('Are you sure you want to cancel this appointment?')) return;
+    const reason = window.prompt(
+      'Are you sure you want to cancel this appointment?\n\n' +
+      'Please provide a reason for cancellation (optional):'
+    );
+
+    if (reason === null) return; // User cancelled
 
     try {
-      await appointmentsApi.cancel(String(appointmentId));
-      toast.success('Appointment cancelled');
+      await appointmentsApi.cancel(String(appointmentId), reason || 'Cancelled by patient');
+      toast.success('Appointment cancelled successfully');
       loadAppointments();
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to cancel appointment');
@@ -104,14 +134,14 @@ export default function AppointmentsPage() {
 
   const getStatusClasses = (status: string) => {
     switch (status) {
-      case 'PENDING_PAYMENT':
-        return 'bg-amber-100 text-amber-800 border border-amber-200';
-      case 'CONFIRMED':
-        return 'bg-green-100 text-green-800 border border-green-200';
       case 'IN_PROGRESS':
         return 'bg-blue-100 text-blue-800 border border-blue-200';
       case 'COMPLETED':
         return 'bg-teal-100 text-teal-800 border border-teal-200';
+      case 'CANCELLED':
+        return 'bg-red-100 text-red-800 border border-red-200';
+      case 'NO_SHOW':
+        return 'bg-gray-100 text-gray-800 border border-gray-200';
       case 'CANCELLED':
         return 'bg-red-100 text-red-800 border border-red-200';
       case 'NO_SHOW':
@@ -192,11 +222,10 @@ export default function AppointmentsPage() {
                   className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-white"
                 >
                   <option value="">All Statuses</option>
-                  <option value="PENDING_PAYMENT">Pending Payment</option>
-                  <option value="CONFIRMED">Confirmed</option>
                   <option value="IN_PROGRESS">In Progress</option>
                   <option value="COMPLETED">Completed</option>
                   <option value="CANCELLED">Cancelled</option>
+                  <option value="NO_SHOW">No Show</option>
                   <option value="NO_SHOW">No Show</option>
                 </select>
               </div>
@@ -296,32 +325,38 @@ export default function AppointmentsPage() {
                       )}
 
                       <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-200">
-                        {appointment.status === 'PENDING_PAYMENT' && (
-                          <div className="inline-flex items-center gap-2 px-3 py-2 bg-amber-50 text-amber-700 rounded-lg text-sm">
-                            <AlertCircle className="w-4 h-4" />
-                            Payment pending
-                          </div>
-                        )}
                         {appointment.status === 'IN_PROGRESS' && (
                           <div className="inline-flex items-center gap-2 px-3 py-2 bg-blue-50 text-blue-700 rounded-lg text-sm">
                             <CheckCircle2 className="w-4 h-4" />
                             In progress
                           </div>
                         )}
+                        {appointment.status === 'NO_SHOW' && (
+                          <div className="inline-flex items-center gap-2 px-3 py-2 bg-gray-50 text-gray-700 rounded-lg text-sm">
+                            <AlertCircle className="w-4 h-4" />
+                            No Show
+                          </div>
+                        )}
                       </div>
 
                       <div className="flex flex-col sm:flex-row gap-2">
-                        {appointment.status === 'PENDING_PAYMENT' && (
+                        {/* Cancel button - available for all non-final statuses */}
+                        {appointment.status !== 'COMPLETED' && 
+                         appointment.status !== 'CANCELLED' && 
+                         appointment.status !== 'NO_SHOW' && (
                           <Button
                             variant="secondary"
-                            className="w-full"
+                            className="w-full border-red-300 text-red-700 hover:bg-red-50"
                             onClick={() => handleCancel(appointment.id)}
                           >
-                            Cancel
+                            Cancel Appointment
                           </Button>
                         )}
 
-                        {appointment.appointmentType === 'ONLINE' && appointment.zoomJoinUrl && appointment.status === 'CONFIRMED' && (
+                        {/* Join Zoom - available for IN_PROGRESS online appointments */}
+                        {appointment.appointmentType === 'ONLINE' && 
+                         appointment.zoomJoinUrl && 
+                         appointment.status === 'IN_PROGRESS' && (
                           <a
                             href={appointment.zoomJoinUrl}
                             target="_blank"

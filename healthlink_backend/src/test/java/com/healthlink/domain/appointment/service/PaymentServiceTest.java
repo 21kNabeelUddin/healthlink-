@@ -158,7 +158,7 @@ class PaymentServiceTest {
                 PaymentResponse response = paymentService.verifyPayment(request, "staff@test.com");
 
                 assertThat(response.getStatus()).isEqualTo(PaymentStatus.VERIFIED.name());
-                assertThat(testAppointment.getStatus()).isEqualTo(AppointmentStatus.CONFIRMED);
+                assertThat(testAppointment.getStatus()).isEqualTo(AppointmentStatus.IN_PROGRESS);
                 verify(webhookService).emitEvent(any());
         }
 

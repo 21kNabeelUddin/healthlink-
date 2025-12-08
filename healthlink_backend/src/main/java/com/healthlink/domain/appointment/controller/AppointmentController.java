@@ -110,6 +110,16 @@ public class AppointmentController {
         return ResponseEntity.ok(appointmentService.completeAppointment(id));
     }
 
+    @PatchMapping("/{id}/no-show")
+    @PreAuthorize("hasAnyRole('DOCTOR','STAFF')")
+    @Operation(summary = "Mark appointment as no-show")
+    @ApiResponse(responseCode = "200", description = "No-show marked successfully")
+    public ResponseEntity<AppointmentResponse> markNoShow(
+            @PathVariable java.util.UUID id,
+            @RequestParam(required = false) String reason) {
+        return ResponseEntity.ok(appointmentService.markNoShow(id, reason));
+    }
+
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('PATIENT','DOCTOR','STAFF','ORGANIZATION','ADMIN')")
     @Operation(summary = "Get appointment by ID")
@@ -123,7 +133,9 @@ public class AppointmentController {
     @PreAuthorize("hasAnyRole('PATIENT','DOCTOR')")
     @Operation(summary = "List appointments")
     @ApiResponse(responseCode = "200", description = "List of appointments")
-    public ResponseEntity<java.util.List<AppointmentResponse>> listAppointments(Authentication authentication) {
-        return ResponseEntity.ok(appointmentService.listAppointments(authentication.getName()));
+    public ResponseEntity<java.util.List<AppointmentResponse>> listAppointments(
+            Authentication authentication,
+            @RequestParam(required = false) String status) {
+        return ResponseEntity.ok(appointmentService.listAppointments(authentication.getName(), status));
     }
 }

@@ -26,7 +26,7 @@ public class DoctorAnalyticsService {
     public DoctorAnalyticsResponse getDoctorAnalytics(UUID doctorId) {
         Integer totalAppointments = appointmentRepository.countByDoctorId(doctorId);
         Integer completedAppointments = appointmentRepository.countByDoctorIdAndStatus(doctorId, AppointmentStatus.COMPLETED);
-        Integer pendingAppointments = appointmentRepository.countByDoctorIdAndStatus(doctorId, AppointmentStatus.CONFIRMED);
+        Integer pendingAppointments = appointmentRepository.countByDoctorIdAndStatus(doctorId, AppointmentStatus.IN_PROGRESS);
         
         BigDecimal totalRevenue = paymentRepository.sumAmountByDoctorIdAndStatus(doctorId, com.healthlink.domain.appointment.entity.PaymentStatus.VERIFIED);
         if (totalRevenue == null) {

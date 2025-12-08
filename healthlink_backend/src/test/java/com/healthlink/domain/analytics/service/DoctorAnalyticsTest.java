@@ -42,7 +42,7 @@ class DoctorAnalyticsTest {
 
         when(appointmentRepository.countByDoctorId(doctorId)).thenReturn(10);
         when(appointmentRepository.countByDoctorIdAndStatus(doctorId, AppointmentStatus.COMPLETED)).thenReturn(5);
-        when(appointmentRepository.countByDoctorIdAndStatus(doctorId, AppointmentStatus.CONFIRMED)).thenReturn(2);
+        when(appointmentRepository.countByDoctorIdAndStatus(doctorId, AppointmentStatus.IN_PROGRESS)).thenReturn(2);
         when(paymentRepository.sumAmountByDoctorIdAndStatus(doctorId, PaymentStatus.VERIFIED))
                 .thenReturn(new BigDecimal("5000.00"));
         when(appointmentRepository.countDistinctPatientsByDoctorId(doctorId)).thenReturn(8);

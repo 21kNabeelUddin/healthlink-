@@ -52,7 +52,7 @@ public class DatabaseSeeder {
             apt1.setDoctor(doctor1);
             apt1.setAppointmentTime(LocalDateTime.now().plusDays(1));
             apt1.setEndTime(LocalDateTime.now().plusDays(1).plusMinutes(30));
-            apt1.setStatus(AppointmentStatus.CONFIRMED);
+            apt1.setStatus(AppointmentStatus.IN_PROGRESS);
             appointmentRepository.save(apt1);
 
             log.info("✅ Database seeded successfully!");

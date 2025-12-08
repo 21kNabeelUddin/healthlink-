@@ -75,11 +75,12 @@ export interface Doctor extends User {
 
 // Appointment
 export type AppointmentType = 'ONLINE' | 'ONSITE';
-export type AppointmentStatus = 'PENDING_PAYMENT' | 'CONFIRMED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW';
+export type AppointmentStatus = 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW';
 
 export interface Appointment {
   id: number;
   appointmentDateTime: string;
+  endTime?: string; // Appointment end time
   reason: string;
   notes?: string;
   status: AppointmentStatus;
@@ -89,10 +90,10 @@ export interface Appointment {
   zoomMeetingPassword?: string;
   zoomJoinUrl?: string;
   zoomStartUrl?: string; // For doctors to start the meeting
-  patientId: number;
+  patientId: string; // UUID string
   patientName: string;
   patientEmail?: string;
-  doctorId: number;
+  doctorId: string; // UUID string
   doctorName: string;
   doctorSpecialization?: string;
   clinicId?: string; // UUID from backend facilityId

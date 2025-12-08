@@ -53,7 +53,7 @@ class DoctorAnalyticsServiceTest {
         // Arrange
         when(appointmentRepository.countByDoctorId(doctorId)).thenReturn(50);
         when(appointmentRepository.countByDoctorIdAndStatus(doctorId, AppointmentStatus.COMPLETED)).thenReturn(40);
-        when(appointmentRepository.countByDoctorIdAndStatus(doctorId, AppointmentStatus.CONFIRMED)).thenReturn(10);
+        when(appointmentRepository.countByDoctorIdAndStatus(doctorId, AppointmentStatus.IN_PROGRESS)).thenReturn(10);
         when(paymentRepository.sumAmountByDoctorIdAndStatus(doctorId, PaymentStatus.VERIFIED))
                 .thenReturn(new BigDecimal("50000.00"));
         when(appointmentRepository.countDistinctPatientsByDoctorId(doctorId)).thenReturn(35);
@@ -71,7 +71,7 @@ class DoctorAnalyticsServiceTest {
 
         verify(appointmentRepository).countByDoctorId(doctorId);
         verify(appointmentRepository).countByDoctorIdAndStatus(doctorId, AppointmentStatus.COMPLETED);
-        verify(appointmentRepository).countByDoctorIdAndStatus(doctorId, AppointmentStatus.CONFIRMED);
+        verify(appointmentRepository).countByDoctorIdAndStatus(doctorId, AppointmentStatus.IN_PROGRESS);
         verify(paymentRepository).sumAmountByDoctorIdAndStatus(doctorId, PaymentStatus.VERIFIED);
         verify(appointmentRepository).countDistinctPatientsByDoctorId(doctorId);
     }
@@ -81,7 +81,7 @@ class DoctorAnalyticsServiceTest {
         // Arrange
         when(appointmentRepository.countByDoctorId(doctorId)).thenReturn(5);
         when(appointmentRepository.countByDoctorIdAndStatus(doctorId, AppointmentStatus.COMPLETED)).thenReturn(0);
-        when(appointmentRepository.countByDoctorIdAndStatus(doctorId, AppointmentStatus.CONFIRMED)).thenReturn(5);
+        when(appointmentRepository.countByDoctorIdAndStatus(doctorId, AppointmentStatus.IN_PROGRESS)).thenReturn(5);
         when(paymentRepository.sumAmountByDoctorIdAndStatus(doctorId, PaymentStatus.VERIFIED)).thenReturn(null);
         when(appointmentRepository.countDistinctPatientsByDoctorId(doctorId)).thenReturn(5);
         when(reviewRepository.findByDoctorId(doctorId)).thenReturn(new ArrayList<>());
@@ -105,7 +105,7 @@ class DoctorAnalyticsServiceTest {
 
         when(appointmentRepository.countByDoctorId(doctorId)).thenReturn(10);
         when(appointmentRepository.countByDoctorIdAndStatus(doctorId, AppointmentStatus.COMPLETED)).thenReturn(8);
-        when(appointmentRepository.countByDoctorIdAndStatus(doctorId, AppointmentStatus.CONFIRMED)).thenReturn(2);
+        when(appointmentRepository.countByDoctorIdAndStatus(doctorId, AppointmentStatus.IN_PROGRESS)).thenReturn(2);
         when(paymentRepository.sumAmountByDoctorIdAndStatus(doctorId, PaymentStatus.VERIFIED))
                 .thenReturn(new BigDecimal("10000.00"));
         when(appointmentRepository.countDistinctPatientsByDoctorId(doctorId)).thenReturn(8);
@@ -126,7 +126,7 @@ class DoctorAnalyticsServiceTest {
         // Arrange
         when(appointmentRepository.countByDoctorId(doctorId)).thenReturn(5);
         when(appointmentRepository.countByDoctorIdAndStatus(doctorId, AppointmentStatus.COMPLETED)).thenReturn(5);
-        when(appointmentRepository.countByDoctorIdAndStatus(doctorId, AppointmentStatus.CONFIRMED)).thenReturn(0);
+        when(appointmentRepository.countByDoctorIdAndStatus(doctorId, AppointmentStatus.IN_PROGRESS)).thenReturn(0);
         when(paymentRepository.sumAmountByDoctorIdAndStatus(doctorId, PaymentStatus.VERIFIED))
                 .thenReturn(new BigDecimal("5000.00"));
         when(appointmentRepository.countDistinctPatientsByDoctorId(doctorId)).thenReturn(5);
@@ -150,7 +150,7 @@ class DoctorAnalyticsServiceTest {
 
         when(appointmentRepository.countByDoctorId(doctorId)).thenReturn(1);
         when(appointmentRepository.countByDoctorIdAndStatus(doctorId, AppointmentStatus.COMPLETED)).thenReturn(1);
-        when(appointmentRepository.countByDoctorIdAndStatus(doctorId, AppointmentStatus.CONFIRMED)).thenReturn(0);
+        when(appointmentRepository.countByDoctorIdAndStatus(doctorId, AppointmentStatus.IN_PROGRESS)).thenReturn(0);
         when(paymentRepository.sumAmountByDoctorIdAndStatus(doctorId, PaymentStatus.VERIFIED))
                 .thenReturn(new BigDecimal("1000.00"));
         when(appointmentRepository.countDistinctPatientsByDoctorId(doctorId)).thenReturn(1);
@@ -175,7 +175,7 @@ class DoctorAnalyticsServiceTest {
 
         when(appointmentRepository.countByDoctorId(doctorId)).thenReturn(3);
         when(appointmentRepository.countByDoctorIdAndStatus(doctorId, AppointmentStatus.COMPLETED)).thenReturn(3);
-        when(appointmentRepository.countByDoctorIdAndStatus(doctorId, AppointmentStatus.CONFIRMED)).thenReturn(0);
+        when(appointmentRepository.countByDoctorIdAndStatus(doctorId, AppointmentStatus.IN_PROGRESS)).thenReturn(0);
         when(paymentRepository.sumAmountByDoctorIdAndStatus(doctorId, PaymentStatus.VERIFIED))
                 .thenReturn(new BigDecimal("3000.00"));
         when(appointmentRepository.countDistinctPatientsByDoctorId(doctorId)).thenReturn(3);
@@ -202,7 +202,7 @@ class DoctorAnalyticsServiceTest {
 
         when(appointmentRepository.countByDoctorId(doctorId)).thenReturn(5);
         when(appointmentRepository.countByDoctorIdAndStatus(doctorId, AppointmentStatus.COMPLETED)).thenReturn(5);
-        when(appointmentRepository.countByDoctorIdAndStatus(doctorId, AppointmentStatus.CONFIRMED)).thenReturn(0);
+        when(appointmentRepository.countByDoctorIdAndStatus(doctorId, AppointmentStatus.IN_PROGRESS)).thenReturn(0);
         when(paymentRepository.sumAmountByDoctorIdAndStatus(doctorId, PaymentStatus.VERIFIED))
                 .thenReturn(new BigDecimal("5000.00"));
         when(appointmentRepository.countDistinctPatientsByDoctorId(doctorId)).thenReturn(5);

@@ -17,7 +17,6 @@ import Link from 'next/link';
 interface PrescriptionFormData {
   title: string;
   body: string;
-  medications: string[];
 }
 
 export default function NewPrescriptionPage() {
@@ -30,7 +29,9 @@ export default function NewPrescriptionPage() {
   const [appointment, setAppointment] = useState<Appointment | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingAppointment, setIsLoadingAppointment] = useState(!!appointmentId);
-  const [medications, setMedications] = useState<string[]>(['']);
+  const [medications, setMedications] = useState<{ name: string; dosage: string }[]>([
+    { name: '', dosage: '' },
+  ]);
   const [interactionWarnings, setInteractionWarnings] = useState<string[]>([]);
   const [isCheckingInteractions, setIsCheckingInteractions] = useState(false);
 
@@ -66,21 +67,24 @@ export default function NewPrescriptionPage() {
   };
 
   const addMedication = () => {
-    setMedications([...medications, '']);
+    setMedications([...medications, { name: '', dosage: '' }]);
   };
 
   const removeMedication = (index: number) => {
     setMedications(medications.filter((_, i) => i !== index));
   };
 
-  const updateMedication = (index: number, value: string) => {
+  const updateMedication = (index: number, field: 'name' | 'dosage', value: string) => {
     const updated = [...medications];
-    updated[index] = value;
+    updated[index] = { ...updated[index], [field]: value };
     setMedications(updated);
   };
 
   const checkInteractions = async () => {
-    const medsToCheck = medications.filter(m => m.trim() !== '');
+    const medsToCheck = medications
+      .map(m => m.name.trim())
+      .filter(Boolean);
+
     if (medsToCheck.length < 2) {
       setInteractionWarnings([]);
       return;
@@ -89,7 +93,6 @@ export default function NewPrescriptionPage() {
     setIsCheckingInteractions(true);
     try {
       const response = await prescriptionsApi.checkInteractions({ medications: medsToCheck });
-      // Response format: { warnings: string[] }
       const warnings = response.warnings || (Array.isArray(response) ? response : []);
       setInteractionWarnings(warnings);
       if (response.warnings && response.warnings.length > 0) {
@@ -108,7 +111,7 @@ export default function NewPrescriptionPage() {
   useEffect(() => {
     // Auto-check interactions when medications change (debounced)
     const timer = setTimeout(() => {
-      if (medications.filter(m => m.trim() !== '').length >= 2) {
+      if (medications.map(m => m.name.trim()).filter(Boolean).length >= 2) {
         checkInteractions();
       } else {
         setInteractionWarnings([]);
@@ -149,7 +152,9 @@ export default function NewPrescriptionPage() {
       return;
     }
 
-    const medsList = medications.filter(m => m.trim() !== '');
+    const medsList = medications
+      .filter(m => m.name.trim() !== '')
+      .map(m => (m.dosage.trim() ? `${m.name.trim()} — ${m.dosage.trim()}` : m.name.trim()));
     if (medsList.length === 0) {
       toast.error('At least one medication is required');
       return;
@@ -268,28 +273,37 @@ export default function NewPrescriptionPage() {
               {/* Medications */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-3">
-                  Medications *
+                  Medications & Dosage *
                 </label>
                 <div className="space-y-3">
                   {medications.map((med, index) => (
-                    <div key={index} className="flex items-center gap-2">
-                      <div className="flex-1">
+                    <div key={index} className="flex flex-col gap-2 rounded-lg border border-slate-200 p-3 bg-white">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <Input
-                          value={med}
-                          onChange={(e) => updateMedication(index, e.target.value)}
-                          placeholder={`Medication ${index + 1} (e.g., Paracetamol 500mg)`}
+                          label="Medicine"
+                          value={med.name}
+                          onChange={(e) => updateMedication(index, 'name', e.target.value)}
+                          placeholder="e.g., Paracetamol"
+                        />
+                        <Input
+                          label="Dosage"
+                          value={med.dosage}
+                          onChange={(e) => updateMedication(index, 'dosage', e.target.value)}
+                          placeholder="e.g., 500mg twice daily"
                         />
                       </div>
-                      {medications.length > 1 && (
-                        <Button
-                          type="button"
-                          variant="danger"
-                          className="text-sm px-3 py-1.5"
-                          onClick={() => removeMedication(index)}
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
-                      )}
+                      <div className="flex justify-end">
+                        {medications.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="danger"
+                            className="text-sm px-3 py-1.5"
+                            onClick={() => removeMedication(index)}
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   ))}
                   <Button
@@ -303,7 +317,7 @@ export default function NewPrescriptionPage() {
                   </Button>
                 </div>
                 <p className="mt-2 text-xs text-slate-500">
-                  Enter medication names. Drug interactions will be checked automatically.
+                  Enter each medicine with its dosage so patients see a clear list.
                 </p>
               </div>
 
@@ -329,13 +343,13 @@ export default function NewPrescriptionPage() {
               {/* Body/Instructions */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Prescription Instructions *
+                  Prescription Instructions / Notes *
                 </label>
                 <textarea
                   {...register('body', { required: 'Prescription instructions are required' })}
                   className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 resize-none"
                   rows={8}
-                  placeholder="Enter detailed prescription instructions, dosage information, frequency, duration, and any special instructions for the patient..."
+                  placeholder="Enter detailed instructions, frequency, duration, and any special notes the patient should follow..."
                 />
                 {errors.body && (
                   <p className="mt-1 text-sm text-red-600">{errors.body.message}</p>

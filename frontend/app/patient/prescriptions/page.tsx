@@ -9,7 +9,7 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import { format } from 'date-fns';
-import { FileText, Calendar, User, Pill, AlertCircle, Download, Printer } from 'lucide-react';
+import { FileText, Calendar, User, Pill, AlertCircle, Download } from 'lucide-react';
 import { Badge } from '@/marketing/ui/badge';
 
 type MedicationEntry =
@@ -51,6 +51,40 @@ export default function PrescriptionsPage() {
   const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [highlightedPrescriptionId, setHighlightedPrescriptionId] = useState<string | null>(null);
+  const handleDownload = (prescription: Prescription) => {
+    const lines: string[] = [];
+    lines.push(`Prescription: ${prescription.title || ''}`);
+    lines.push(`Doctor: ${prescription.doctorName || ''}`);
+    lines.push(`Date: ${formatDateSafe(prescription.createdAt)}`);
+    lines.push('');
+    lines.push('Medications:');
+    if (prescription.medications && prescription.medications.length > 0) {
+      prescription.medications.forEach((med, idx) => {
+        if (typeof med === 'string') {
+          lines.push(`${idx + 1}. ${med}`);
+        } else {
+          const parts = [med.name, med.dosage, med.frequency, med.duration].filter(Boolean).join(' — ');
+          lines.push(`${idx + 1}. ${parts || 'Medicine'}`);
+        }
+      });
+    } else {
+      lines.push('None listed.');
+    }
+    if (prescription.instructions || prescription.body) {
+      lines.push('');
+      lines.push('Additional instructions:');
+      lines.push(prescription.instructions || prescription.body || '');
+    }
+    const blob = new Blob([lines.join('\n')], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `prescription-${prescription.id || 'download'}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  };
   const formatDateSafe = (value?: string, pattern = 'MMM dd, yyyy') => {
     if (!value) return 'N/A';
     const d = new Date(value);
@@ -60,16 +94,20 @@ export default function PrescriptionsPage() {
 
   const renderMedication = (med: MedicationEntry, idx: number) => {
     if (typeof med === 'string') {
+      const [maybeName, ...rest] = med.split('—');
+      const parsedName = maybeName?.trim();
+      const parsedDosage = rest.join('—').trim();
       return (
-        <div key={idx} className="p-3 border border-slate-200 rounded-lg">
-          <p className="text-sm text-slate-800">{med}</p>
+        <div key={idx} className="p-3 border border-slate-200 rounded-lg bg-white">
+          <p className="font-medium text-slate-900">{parsedName || 'Medicine'}</p>
+          {parsedDosage && <p className="text-sm text-slate-600">{parsedDosage}</p>}
         </div>
       );
     }
     const hasDetails = med.dosage || med.frequency || med.duration;
     return (
-      <div key={med.id || idx} className="p-3 border border-slate-200 rounded-lg">
-        <p className="font-medium text-slate-900">{med.name || 'Medication'}</p>
+      <div key={med.id || idx} className="p-3 border border-slate-200 rounded-lg bg-white">
+        <p className="font-medium text-slate-900">{med.name || 'Medicine'}</p>
         {hasDetails && (
           <p className="text-sm text-slate-600">
             {[med.dosage, med.frequency, med.duration].filter(Boolean).join(' • ')}
@@ -196,13 +234,13 @@ export default function PrescriptionsPage() {
                           </div>
                         </div>
                         <div className="flex gap-2">
-                          <Button variant="secondary" className="inline-flex items-center gap-2">
+                          <Button
+                            variant="secondary"
+                            className="inline-flex items-center gap-2"
+                            onClick={() => handleDownload(prescription)}
+                          >
                             <Download className="w-4 h-4" />
                             Download
-                          </Button>
-                          <Button variant="secondary" className="inline-flex items-center gap-2">
-                            <Printer className="w-4 h-4" />
-                            Print
                           </Button>
                         </div>
                       </div>
@@ -230,12 +268,6 @@ export default function PrescriptionsPage() {
                           </div>
                         )}
 
-                        {(prescription.instructions || prescription.body) && (
-                          <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-700">
-                            {prescription.instructions || prescription.body}
-                          </div>
-                        )}
-
                         <div className="space-y-3">
                           <h4 className="font-semibold text-slate-900 flex items-center gap-2">
                             <FileText className="w-4 h-4" />
@@ -247,6 +279,13 @@ export default function PrescriptionsPage() {
                             <p className="text-sm text-slate-600">No medications listed.</p>
                           )}
                         </div>
+
+                        {(prescription.instructions || prescription.body) && (
+                          <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-700">
+                            <p className="font-medium text-slate-900 mb-1">Additional instructions</p>
+                            <p>{prescription.instructions || prescription.body}</p>
+                          </div>
+                        )}
                       </div>
                     </Card>
                   </div>

@@ -515,7 +515,7 @@ export default function DoctorAppointmentsPage() {
                     </div>
                   </div>
 
-                  {/* Appointments List */}
+                  {/* Appointments List (compact summary) */}
                   <div className="p-6">
                     {clinic.appointments.length === 0 ? (
                       <div className="text-center py-8 text-slate-500">
@@ -526,11 +526,11 @@ export default function DoctorAppointmentsPage() {
                         {clinic.appointments.map((appointment) => (
                           <div
                             key={appointment.id}
-                            className="border border-slate-200 rounded-lg p-4 hover:shadow-md transition-all"
+                            className="border border-slate-200 rounded-lg p-4 hover:shadow-md transition-all bg-white"
                           >
-                            <div className="flex items-start justify-between">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-3 mb-3">
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="flex-1 space-y-2">
+                                <div className="flex flex-wrap items-center gap-3">
                                   <div className="flex items-center gap-2">
                                     {getStatusIcon(appointment.status)}
                                     <h3 className="text-lg font-semibold text-slate-900">
@@ -553,141 +553,30 @@ export default function DoctorAppointmentsPage() {
                                   )}
                                 </div>
 
-                                {/* Highlighted Date & Time */}
-                                <div className="mb-4 p-3 bg-gradient-to-r from-teal-50 to-violet-50 rounded-lg border border-teal-200">
+                                <div className="flex flex-wrap items-center gap-4 text-sm text-slate-700">
                                   <div className="flex items-center gap-2">
-                                    <Calendar className="w-5 h-5 text-teal-600" />
-                                    <div>
-                                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Date & Time</p>
-                                      <p className="text-lg font-bold text-slate-900">
-                                        {format(new Date(appointment.appointmentDateTime), 'MMM dd, yyyy')}
-                                      </p>
-                                      <p className="text-base font-semibold text-teal-700">
-                                        {format(new Date(appointment.appointmentDateTime), 'h:mm a')}
-                                      </p>
-                                    </div>
-                                  </div>
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-slate-600 mb-3">
-                                  <div className="flex items-center gap-2">
-                                    <User className="w-4 h-4 text-slate-400" />
-                                    <span>
-                                      <strong>Patient:</strong>{' '}
-                                      {appointment.patientName || `Patient ID: ${appointment.patientId}`}
+                                    <Calendar className="w-4 h-4 text-teal-600" />
+                                    <span className="font-semibold text-slate-900">
+                                      {format(new Date(appointment.appointmentDateTime), 'MMM dd, yyyy • h:mm a')}
                                     </span>
                                   </div>
-                                  {appointment.patientEmail && (
+                                  {appointment.clinicName && (
                                     <div className="flex items-center gap-2">
-                                      <Phone className="w-4 h-4 text-slate-400" />
-                                      <span>{appointment.patientEmail}</span>
-                                    </div>
-                                  )}
-                                  {appointment.clinicName && appointment.id !== 0 && (
-                                    <div className="flex items-center gap-2">
-                                      <Building2 className="w-4 h-4 text-slate-400" />
+                                      <Building2 className="w-4 h-4 text-slate-500" />
                                       <span>{appointment.clinicName}</span>
                                     </div>
                                   )}
                                 </div>
-
-                                {appointment.reason && (
-                                  <div className="mb-2">
-                                    <p className="text-sm text-slate-700">
-                                      <strong>Reason:</strong> {appointment.reason}
-                                    </p>
-                                  </div>
-                                )}
-
-                                {appointment.notes && (
-                                  <div className="mb-2">
-                                    <p className="text-sm text-slate-600">
-                                      <strong>Notes:</strong> {appointment.notes}
-                                    </p>
-                                  </div>
-                                )}
-
-                                {/* Zoom Meeting Button - Show for ONLINE appointments */}
-                                {appointment.appointmentType === 'ONLINE' && isActiveAppointment(appointment.status) && (
-                                  <div className="mt-3">
-                                    {appointment.zoomStartUrl ? (
-                                      canStartMeeting(appointment.appointmentDateTime) ? (
-                                        <a
-                                          href={appointment.zoomStartUrl}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          className="inline-flex items-center gap-2 bg-gradient-to-r from-teal-500 to-violet-600 text-white px-4 py-2 rounded-lg font-medium hover:from-teal-600 hover:to-violet-700 transition-all shadow-md hover:shadow-lg"
-                                        >
-                                          <Video className="w-5 h-5" />
-                                          Start Zoom Meeting
-                                          <ExternalLink className="w-4 h-4" />
-                                        </a>
-                                      ) : (
-                                        <div className="inline-flex items-center gap-2 bg-slate-200 text-slate-600 px-4 py-2 rounded-lg font-medium cursor-not-allowed">
-                                          <Clock className="w-5 h-5" />
-                                          <span>Meeting available 5 minutes before start time ({format(new Date(appointment.appointmentDateTime), 'MMM dd, h:mm a')})</span>
-                                        </div>
-                                      )
-                                    ) : (
-                                      <div className="inline-flex items-center gap-2 bg-amber-100 text-amber-800 px-4 py-2 rounded-lg font-medium border border-amber-300">
-                                        <AlertCircle className="w-5 h-5" />
-                                        <span>Zoom meeting link will be available soon</span>
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
-                                
-                                {/* Prescription Status */}
-                                {prescriptionMap[appointment.id.toString()] ? (
-                                  <div className="mt-2 flex items-center gap-2 text-sm text-green-600">
-                                    <CheckCircle2 className="w-4 h-4" />
-                                    <span>Prescription created</span>
-                                  </div>
-                                ) : isActiveAppointment(appointment.status) && (
-                                  <div className="mt-2 flex items-center gap-2 text-sm text-amber-600">
-                                    <AlertCircle className="w-4 h-4" />
-                                    <span>Prescription required</span>
-                                  </div>
-                                )}
                               </div>
 
-                              {/* Actions */}
-                              <div className="flex flex-col gap-2 ml-4">
-                                {/* Show for PENDING_PAYMENT, CONFIRMED, and IN_PROGRESS statuses */}
-                                {isActiveAppointment(appointment.status) && (
-                                  <>
-                                    {hasAppointmentStarted(appointment.appointmentDateTime) ? (
-                                      <Link href={`/doctor/prescriptions/new?appointmentId=${appointment.id}&patientId=${appointment.patientId}`}>
-                                        <Button
-                                          variant="primary"
-                                          className="w-full text-sm px-3 py-1.5"
-                                        >
-                                          <FileText className="w-4 h-4 mr-2" />
-                                          {prescriptionMap[appointment.id.toString()] ? 'Edit Prescription' : 'Create Prescription'}
-                                        </Button>
-                                      </Link>
-                                    ) : (
-                                      <Button
-                                        variant="secondary"
-                                        className="w-full text-sm px-3 py-1.5 cursor-not-allowed"
-                                        disabled
-                                        title={`Prescription can only be created after the appointment starts (${format(new Date(appointment.appointmentDateTime), 'MMM dd, h:mm a')})`}
-                                      >
-                                        <FileText className="w-4 h-4 mr-2" />
-                                        Create Prescription
-                                        <span className="ml-2 text-xs">(Available after appointment starts)</span>
-                                      </Button>
-                                    )}
-                                    <Button
-                                      variant="primary"
-                                      onClick={() => handleAppointmentAction(appointment.id.toString(), 'complete')}
-                                      className="w-full text-sm px-3 py-1.5"
-                                    >
-                                      <CheckCircle2 className="w-4 h-4 mr-2" />
-                                      Conclude Appointment
-                                    </Button>
-                                  </>
-                                )}
+                              <div className="flex items-center">
+                                <Link
+                                  href={`/doctor/appointments/${appointment.id}?patientId=${appointment.patientId}`}
+                                  className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-teal-500 to-violet-600 text-white rounded-lg font-medium hover:from-teal-600 hover:to-violet-700 transition-shadow shadow-sm"
+                                >
+                                  View Details
+                                  <ExternalLink className="w-4 h-4 ml-2" />
+                                </Link>
                               </div>
                             </div>
                           </div>

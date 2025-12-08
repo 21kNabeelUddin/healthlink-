@@ -1,0 +1,401 @@
+'use client';
+
+import { useEffect, useMemo, useState } from 'react';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
+import { format } from 'date-fns';
+import {
+  Calendar,
+  Clock,
+  Building2,
+  User,
+  Phone,
+  Video,
+  ExternalLink,
+  AlertCircle,
+  CheckCircle2,
+  XCircle,
+  FileText,
+} from 'lucide-react';
+import DashboardLayout from '@/components/layout/DashboardLayout';
+import Card from '@/components/ui/Card';
+import Button from '@/components/ui/Button';
+import { Badge } from '@/marketing/ui/badge';
+import { appointmentsApi, prescriptionsApi, medicalRecordsApi } from '@/lib/api';
+import { Appointment, MedicalHistory } from '@/types';
+import { toast } from 'react-hot-toast';
+
+type AppointmentStatus = Appointment['status'];
+type Prescription = {
+  id: string;
+  title?: string;
+  body?: string;
+  instructions?: string;
+  createdAt?: string;
+  validUntil?: string;
+  doctorName?: string;
+  clinicName?: string;
+  appointmentId?: string;
+  medications?: any[];
+};
+
+export default function DoctorAppointmentDetailPage() {
+  const params = useParams<{ id: string }>();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const appointmentId = params?.id;
+  const patientIdFromQuery = searchParams.get('patientId') || '';
+
+  const [appointment, setAppointment] = useState<Appointment | null>(null);
+  const [prescription, setPrescription] = useState<Prescription | null>(null);
+  const [history, setHistory] = useState<MedicalHistory[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isCompleting, setIsCompleting] = useState(false);
+
+  useEffect(() => {
+    if (appointmentId) {
+      loadData();
+    }
+  }, [appointmentId]);
+
+  const loadData = async () => {
+    setIsLoading(true);
+    try {
+      const apt = await appointmentsApi.getById(appointmentId as string);
+      setAppointment(apt);
+
+      if (apt?.patientId) {
+        const [rxByApt, medicalHistory] = await Promise.all([
+          prescriptionsApi.getByAppointmentId(appointmentId as string),
+          medicalRecordsApi.listForPatient(apt.patientId.toString()),
+        ]);
+        setPrescription(rxByApt);
+        setHistory(Array.isArray(medicalHistory) ? medicalHistory : []);
+      }
+    } catch (error) {
+      toast.error('Failed to load appointment details');
+      console.error(error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const canStartMeeting = (appointmentDateTime?: string): boolean => {
+    if (!appointmentDateTime) return false;
+    const appointmentTime = new Date(appointmentDateTime);
+    const now = new Date();
+    const fiveMinutesBefore = new Date(appointmentTime.getTime() - 5 * 60 * 1000);
+    return now >= fiveMinutesBefore;
+  };
+
+  const hasAppointmentStarted = (appointmentDateTime?: string): boolean => {
+    if (!appointmentDateTime) return false;
+    const appointmentTime = new Date(appointmentDateTime);
+    const now = new Date();
+    return now >= appointmentTime;
+  };
+
+  const isActiveAppointment = (status: AppointmentStatus): boolean => {
+    return status === 'PENDING_PAYMENT' || status === 'CONFIRMED' || status === 'IN_PROGRESS';
+  };
+
+  const getStatusLabel = (status: string) =>
+    status
+      .split('_')
+      .map((p) => p.charAt(0) + p.slice(1).toLowerCase())
+      .join(' ');
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'CONFIRMED':
+        return 'bg-green-100 text-green-800 border-green-200';
+      case 'PENDING_PAYMENT':
+        return 'bg-amber-100 text-amber-800 border-amber-200';
+      case 'IN_PROGRESS':
+        return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'CANCELLED':
+        return 'bg-red-100 text-red-800 border-red-200';
+      case 'COMPLETED':
+        return 'bg-teal-100 text-teal-800 border-teal-200';
+      case 'NO_SHOW':
+        return 'bg-gray-100 text-gray-800 border-gray-200';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  const handleComplete = async () => {
+    if (!appointment) return;
+    setIsCompleting(true);
+    try {
+      await appointmentsApi.complete(appointment.id.toString());
+      toast.success('Appointment completed successfully');
+      await loadData();
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || 'Failed to conclude appointment');
+    } finally {
+      setIsCompleting(false);
+    }
+  };
+
+  if (isLoading || !appointment) {
+    return (
+      <DashboardLayout requiredUserType="DOCTOR">
+        <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex items-center justify-center text-slate-600">
+          Loading appointment...
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  const patientId = appointment.patientId?.toString() || patientIdFromQuery;
+
+  return (
+    <DashboardLayout requiredUserType="DOCTOR">
+      <div className="min-h-screen bg-gradient-to-b from-blue-50 via-white to-blue-50">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-slate-500 uppercase tracking-wide">Appointment Details</p>
+              <h1 className="text-3xl font-bold text-slate-900">
+                {appointment.patientName || `Patient ID: ${appointment.patientId}`}
+              </h1>
+              <div className="mt-2 flex items-center gap-2 flex-wrap">
+                <Badge variant="outline" className={`${getStatusColor(appointment.status)} border`}>
+                  {getStatusLabel(appointment.status)}
+                </Badge>
+                <Badge variant="secondary">{appointment.appointmentType}</Badge>
+                {appointment.isEmergency && (
+                  <Badge variant="destructive" className="text-xs">
+                    Emergency
+                  </Badge>
+                )}
+              </div>
+            </div>
+            <Button variant="secondary" onClick={() => router.push('/doctor/appointments')}>
+              Back to Appointments
+            </Button>
+          </div>
+
+          <Card className="p-5 shadow-sm">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-slate-700">
+                  <Calendar className="w-5 h-5 text-teal-600" />
+                  <div>
+                    <p className="text-xs uppercase text-slate-500">Date</p>
+                    <p className="text-lg font-semibold text-slate-900">
+                      {format(new Date(appointment.appointmentDateTime), 'MMM dd, yyyy')}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 text-slate-700">
+                  <Clock className="w-5 h-5 text-teal-600" />
+                  <div>
+                    <p className="text-xs uppercase text-slate-500">Time</p>
+                    <p className="text-lg font-semibold text-slate-900">
+                      {format(new Date(appointment.appointmentDateTime), 'h:mm a')}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-slate-700">
+                  <User className="w-5 h-5 text-slate-500" />
+                  <div>
+                    <p className="text-xs uppercase text-slate-500">Patient</p>
+                    <p className="text-lg font-semibold text-slate-900">
+                      {appointment.patientName || `Patient ID: ${appointment.patientId}`}
+                    </p>
+                  </div>
+                </div>
+                {appointment.patientEmail && (
+                  <div className="flex items-center gap-2 text-slate-700">
+                    <Phone className="w-5 h-5 text-slate-500" />
+                    <div>
+                      <p className="text-xs uppercase text-slate-500">Email</p>
+                      <p className="text-sm text-slate-800">{appointment.patientEmail}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              {appointment.clinicName && (
+                <div className="flex items-start gap-2 text-slate-700">
+                  <Building2 className="w-5 h-5 text-rose-500" />
+                  <div>
+                    <p className="text-xs uppercase text-slate-500">Clinic</p>
+                    <p className="text-sm text-slate-900">{appointment.clinicName}</p>
+                    {appointment.clinicAddress && (
+                      <p className="text-xs text-slate-600">{appointment.clinicAddress}</p>
+                    )}
+                  </div>
+                </div>
+              )}
+              <div className="space-y-2 text-sm text-slate-700">
+                {appointment.reason && (
+                  <p>
+                    <span className="font-semibold text-slate-900">Reason:</span> {appointment.reason}
+                  </p>
+                )}
+                {appointment.notes && (
+                  <p>
+                    <span className="font-semibold text-slate-900">Notes:</span> {appointment.notes}
+                  </p>
+                )}
+              </div>
+            </div>
+          </Card>
+
+          <Card className="p-5 shadow-sm">
+            <div className="flex flex-wrap gap-3">
+              {appointment.appointmentType === 'ONLINE' && (
+                <Button
+                  variant="primary"
+                  disabled={!appointment.zoomStartUrl || !canStartMeeting(appointment.appointmentDateTime)}
+                  className="flex items-center gap-2"
+                  asChild
+                >
+                  {appointment.zoomStartUrl ? (
+                    <Link href={appointment.zoomStartUrl} target="_blank">
+                      <>
+                        <Video className="w-4 h-4" />
+                        Start Zoom Meeting
+                        <ExternalLink className="w-3 h-3" />
+                      </>
+                    </Link>
+                  ) : (
+                    <>
+                      <AlertCircle className="w-4 h-4" />
+                      Zoom link unavailable
+                    </>
+                  )}
+                </Button>
+              )}
+
+              {isActiveAppointment(appointment.status) && (
+                <>
+                  {hasAppointmentStarted(appointment.appointmentDateTime) ? (
+                    <Link href={`/doctor/prescriptions/new?appointmentId=${appointment.id}&patientId=${patientId}`}>
+                      <Button variant="outline" className="flex items-center gap-2">
+                        <FileText className="w-4 h-4" />
+                        {prescription ? 'Edit Prescription' : 'Create Prescription'}
+                      </Button>
+                    </Link>
+                  ) : (
+                    <Button variant="secondary" disabled className="flex items-center gap-2">
+                      <FileText className="w-4 h-4" />
+                      Create Prescription (available after start)
+                    </Button>
+                  )}
+
+                  <Button
+                    variant="primary"
+                    className="flex items-center gap-2"
+                    onClick={handleComplete}
+                    disabled={isCompleting}
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    {isCompleting ? 'Completing...' : 'Conclude Appointment'}
+                  </Button>
+                </>
+              )}
+            </div>
+          </Card>
+
+          <div className="grid lg:grid-cols-2 gap-6">
+            <Card className="p-5 shadow-sm">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-lg font-semibold text-slate-900">Patient Medical History</h3>
+                {patientId && (
+                  <Link
+                    href={`/patient/medical-history?patientId=${patientId}`}
+                    className="text-xs text-teal-600 hover:underline"
+                  >
+                    View all
+                  </Link>
+                )}
+              </div>
+              {history.length === 0 ? (
+                <p className="text-sm text-slate-600">No history found.</p>
+              ) : (
+                <div className="space-y-3">
+                  {history.slice(0, 4).map((h) => (
+                    <div key={h.id} className="border border-slate-200 rounded-lg p-3">
+                      <div className="flex items-center justify-between text-sm text-slate-700">
+                        <span className="font-semibold text-slate-900">{h.condition}</span>
+                        <Badge variant="outline">{h.status.replace('_', ' ')}</Badge>
+                      </div>
+                      <p className="text-xs text-slate-500 mt-1">
+                        Diagnosed: {format(new Date(h.diagnosisDate), 'MMM dd, yyyy')}
+                      </p>
+                      <p className="text-sm text-slate-700 mt-1 line-clamp-2">{h.description}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
+
+            <Card className="p-5 shadow-sm">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-lg font-semibold text-slate-900">Prescriptions</h3>
+                {patientId && (
+                  <Link
+                    href={`/patient/prescriptions?appointmentId=${appointment.id}`}
+                    className="text-xs text-teal-600 hover:underline"
+                  >
+                    View patient prescriptions
+                  </Link>
+                )}
+              </div>
+              {!prescription ? (
+                <p className="text-sm text-slate-600">No prescription for this appointment yet.</p>
+              ) : (
+                <div className="space-y-2">
+                  <div className="flex flex-wrap items-center gap-2 text-sm text-slate-700">
+                    <Badge variant="outline" className="bg-white text-slate-700 border-slate-200">
+                      {format(new Date(prescription.createdAt || ''), 'MMM dd, yyyy')}
+                    </Badge>
+                    {prescription.clinicName && (
+                      <Badge variant="outline" className="bg-white text-slate-700 border-slate-200">
+                        {prescription.clinicName}
+                      </Badge>
+                    )}
+                  </div>
+                  {(prescription.instructions || prescription.body) && (
+                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-700">
+                      {prescription.instructions || prescription.body}
+                    </div>
+                  )}
+                  <div className="space-y-2">
+                    <p className="text-xs uppercase text-slate-500">Medications</p>
+                    {prescription.medications && prescription.medications.length > 0 ? (
+                      prescription.medications.map((med: any, idx: number) => (
+                        <div key={med.id || idx} className="border border-slate-200 rounded-lg p-3">
+                          <p className="font-medium text-slate-900">{med.name || med}</p>
+                          {(med.dosage || med.frequency || med.duration) && (
+                            <p className="text-sm text-slate-600">
+                              {[med.dosage, med.frequency, med.duration].filter(Boolean).join(' • ')}
+                            </p>
+                          )}
+                          {med.instructions && (
+                            <p className="text-xs text-slate-500 mt-1">{med.instructions}</p>
+                          )}
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-sm text-slate-600">No medications listed.</p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </Card>
+          </div>
+        </div>
+      </div>
+    </DashboardLayout>
+  );
+}
+

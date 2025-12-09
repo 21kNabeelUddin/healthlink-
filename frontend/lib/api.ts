@@ -952,8 +952,8 @@ export const adminApi = {
     return response.data;
   },
 
-  deleteClinic: async (clinicId: string): Promise<void> => {
-    return facilitiesApi.deactivate(clinicId);
+  deleteClinic: async (clinicId: string | number): Promise<void> => {
+    return facilitiesApi.deactivate(String(clinicId));
   },
 
   // Medical History Management (using medical records API)

@@ -1,0 +1,11 @@
+.git
+.gitignore
+build
+.gradle
+node_modules
+npm-debug.log
+yarn-error.log
+*.iml
+.idea
+.vscode
+

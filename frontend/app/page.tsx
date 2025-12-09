@@ -12,16 +12,20 @@ export default function Home() {
   useEffect(() => {
     if (!isLoading && isAuthenticated && user) {
       // Redirect authenticated users to their dashboard
-      switch (user.userType) {
-        case 'PATIENT':
-          router.replace('/patient/dashboard');
-          break;
-        case 'DOCTOR':
-          router.replace('/doctor/dashboard');
-          break;
-        case 'ADMIN':
-          router.replace('/admin/dashboard');
-          break;
+      // Only redirect if we're actually on the home page (not already on a dashboard)
+      const currentPath = window.location.pathname;
+      if (currentPath === '/' || currentPath === '') {
+        switch (user.userType) {
+          case 'PATIENT':
+            router.replace('/patient/dashboard');
+            break;
+          case 'DOCTOR':
+            router.replace('/doctor/dashboard');
+            break;
+          case 'ADMIN':
+            router.replace('/admin/dashboard');
+            break;
+        }
       }
     }
   }, [isAuthenticated, isLoading, user, router]);

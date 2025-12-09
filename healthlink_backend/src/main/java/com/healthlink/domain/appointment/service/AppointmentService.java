@@ -344,6 +344,40 @@ public class AppointmentService {
                 .collect(java.util.stream.Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
+    public java.util.List<AppointmentResponse> listAllAppointments(String status) {
+        java.util.List<Appointment> appointments = appointmentRepository.findAllWithValidStatus();
+        
+        // Auto-update status to IN_PROGRESS for appointments that have started
+        LocalDateTime now = LocalDateTime.now();
+        for (Appointment apt : appointments) {
+            if (apt.getStatus() != AppointmentStatus.IN_PROGRESS &&
+                apt.getStatus() != AppointmentStatus.COMPLETED &&
+                apt.getStatus() != AppointmentStatus.CANCELLED &&
+                apt.getStatus() != AppointmentStatus.NO_SHOW &&
+                now.isAfter(apt.getAppointmentTime())) {
+                apt.setStatus(AppointmentStatus.IN_PROGRESS);
+                appointmentRepository.save(apt);
+            }
+        }
+
+        // Filter by status if provided
+        if (status != null && !status.isEmpty()) {
+            try {
+                AppointmentStatus statusEnum = AppointmentStatus.valueOf(status);
+                appointments = appointments.stream()
+                        .filter(apt -> apt.getStatus() == statusEnum)
+                        .collect(java.util.stream.Collectors.toList());
+            } catch (IllegalArgumentException e) {
+                // Invalid status, return all appointments
+            }
+        }
+
+        return appointments.stream()
+                .map(this::mapToResponse)
+                .collect(java.util.stream.Collectors.toList());
+    }
+
     private void updateStatusBasedOnCheckIns(Appointment appointment, LocalDateTime eventTime) {
         boolean staffRequired = requiresStaffAssignment(appointment.getFacility(), appointment.getServiceOffering());
         if (!staffRequired) {

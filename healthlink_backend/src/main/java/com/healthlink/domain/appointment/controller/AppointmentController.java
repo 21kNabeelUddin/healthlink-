@@ -130,12 +130,16 @@ public class AppointmentController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('PATIENT','DOCTOR')")
+    @PreAuthorize("hasAnyRole('PATIENT','DOCTOR','ADMIN')")
     @Operation(summary = "List appointments")
     @ApiResponse(responseCode = "200", description = "List of appointments")
     public ResponseEntity<java.util.List<AppointmentResponse>> listAppointments(
             Authentication authentication,
             @RequestParam(required = false) String status) {
+        // Admin can see all appointments
+        if (authentication.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"))) {
+            return ResponseEntity.ok(appointmentService.listAllAppointments(status));
+        }
         return ResponseEntity.ok(appointmentService.listAppointments(authentication.getName(), status));
     }
 }

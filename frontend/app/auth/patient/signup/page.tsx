@@ -36,12 +36,12 @@ export default function PatientSignup() {
         phoneNumber: data.phoneNumber,
         dateOfBirth: data.dateOfBirth ? `${data.dateOfBirth}T00:00:00` : undefined,
         address: data.address,
+        role: 'PATIENT', // Required by backend
       });
 
       // For patients, backend does NOT return tokens until email is verified.
       // A successful response with a user object means registration succeeded.
       if (response?.user) {
-        await authApi.sendOtp(data.email);
         toast.success('Registration successful! We\'ve sent a verification code to your email.');
         router.push(`/auth/patient/verify-otp?email=${encodeURIComponent(data.email)}`);
       } else {
@@ -147,7 +147,26 @@ export default function PatientSignup() {
         <Input
           label="Date of Birth"
           type="date"
-          {...register('dateOfBirth', { required: 'Date of birth is required' })}
+          max={new Date().toISOString().split('T')[0]}
+          {...register('dateOfBirth', { 
+            required: 'Date of birth is required',
+            validate: (value) => {
+              if (!value) return true;
+              const selectedDate = new Date(value);
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
+              if (selectedDate > today) {
+                return 'Date of birth cannot be in the future';
+              }
+              // Check if person is at least 1 year old
+              const oneYearAgo = new Date();
+              oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+              if (selectedDate > oneYearAgo) {
+                return 'Date of birth must be at least 1 year ago';
+              }
+              return true;
+            }
+          })}
           error={errors.dateOfBirth?.message}
         />
 

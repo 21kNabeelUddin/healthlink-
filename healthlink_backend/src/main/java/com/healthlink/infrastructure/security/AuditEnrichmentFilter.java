@@ -74,6 +74,15 @@ public class AuditEnrichmentFilter extends OncePerRequestFilter {
 
             // Log request initiation (non-PHI)
             if (!isHealthCheck(path)) {
+                // Add System.out.println for admin dashboard requests to debug
+                if (path.contains("/analytics/admin")) {
+                    System.out.println("========================================");
+                    System.out.println("FILTER: Request received for /analytics/admin");
+                    System.out.println("Method: " + method);
+                    System.out.println("Path: " + path);
+                    System.out.println("RequestId: " + requestId);
+                    System.out.println("========================================");
+                }
                 log.event("http_request_start")
                    .with("method", method)
                    .with("path", sanitizePath(path))
@@ -90,6 +99,13 @@ public class AuditEnrichmentFilter extends OncePerRequestFilter {
 
             // Log request completion
             if (!isHealthCheck(path)) {
+                // Add System.out.println for admin dashboard requests to debug
+                if (path.contains("/analytics/admin")) {
+                    System.out.println("========================================");
+                    System.out.println("FILTER: Request completed for /analytics/admin");
+                    System.out.println("Status: " + response.getStatus());
+                    System.out.println("========================================");
+                }
                 log.event("http_request_complete")
                    .with("status", String.valueOf(response.getStatus()))
                    .with("requestId", requestId)

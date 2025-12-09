@@ -90,4 +90,21 @@ public interface AppointmentRepository extends JpaRepository<Appointment, UUID> 
                 return staffHasConflictingAppointment(staffId, startTime, endTime, excludeAppointmentId,
                                 AppointmentStatus.CANCELLED);
         }
+
+        // Admin analytics - count appointments by status (only valid statuses)
+        @Query(value = """
+                SELECT COUNT(*) FROM appointments 
+                WHERE status = :status
+                AND status IN ('IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'NO_SHOW')
+                """, nativeQuery = true)
+        Long countByStatus(@Param("status") String status);
+
+        // Admin - get all appointments with valid statuses
+        @Query(value = """
+                SELECT * FROM appointments 
+                WHERE deleted_at IS NULL
+                AND status IN ('IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'NO_SHOW')
+                ORDER BY appointment_time DESC
+                """, nativeQuery = true)
+        java.util.List<Appointment> findAllWithValidStatus();
 }

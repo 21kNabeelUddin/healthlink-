@@ -176,6 +176,11 @@ healthlink:
     access-token-expiration: 14400000 # 4 hours (changed from 15 minutes)
     refresh-token-expiration: 604800000 # 7 days
 
+  # Mail Configuration
+  mail:
+    from: ${HEALTHLINK_MAIL_FROM:noreply@healthlink.com}
+    from-name: ${HEALTHLINK_MAIL_FROM_NAME:HealthLink Platform}
+
   # OTP Configuration
   otp:
     length: 6

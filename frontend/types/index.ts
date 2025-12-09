@@ -48,6 +48,7 @@ export interface SignupRequest {
   firstName: string;
   lastName: string;
   phoneNumber: string;
+  role?: 'PATIENT' | 'DOCTOR' | 'ADMIN' | 'ORGANIZATION';
   dateOfBirth?: string;
   address?: string;
   specialization?: string;

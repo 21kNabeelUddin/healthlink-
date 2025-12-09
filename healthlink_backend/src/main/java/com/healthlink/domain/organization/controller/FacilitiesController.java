@@ -4,6 +4,7 @@ import com.healthlink.domain.organization.dto.FacilityRequest;
 import com.healthlink.domain.organization.dto.FacilityResponse;
 import com.healthlink.domain.organization.service.FacilityService;
 import com.healthlink.security.annotation.PhiAccess;
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -83,5 +84,12 @@ public class FacilitiesController {
     @PreAuthorize("hasAnyRole('DOCTOR','ORGANIZATION','ADMIN')")
     public void activate(@PathVariable UUID id) {
         facilityService.activate(id);
+    }
+
+    @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "List all facilities (Admin only)")
+    public List<FacilityResponse> listAll() {
+        return facilityService.listAll();
     }
 }

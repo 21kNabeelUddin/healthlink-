@@ -1,8 +1,10 @@
 package com.healthlink.domain.analytics.controller;
 
+import com.healthlink.domain.analytics.dto.AdminDashboardResponse;
 import com.healthlink.domain.analytics.dto.DoctorAnalyticsResponse;
 import com.healthlink.domain.analytics.dto.PatientAnalyticsResponse;
 import com.healthlink.domain.analytics.dto.OrganizationAnalyticsResponse;
+import com.healthlink.domain.analytics.service.AdminAnalyticsService;
 import com.healthlink.domain.analytics.service.DoctorAnalyticsService;
 import com.healthlink.domain.analytics.service.PatientAnalyticsService;
 import com.healthlink.domain.analytics.service.OrganizationAnalyticsService;
@@ -10,6 +12,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -18,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/v1/analytics")
 @RequiredArgsConstructor
@@ -25,6 +29,7 @@ import java.util.UUID;
 @SecurityRequirement(name = "bearerAuth")
 public class AnalyticsController {
 
+    private final AdminAnalyticsService adminAnalyticsService;
     private final DoctorAnalyticsService doctorAnalyticsService;
     private final PatientAnalyticsService patientAnalyticsService;
     private final OrganizationAnalyticsService organizationAnalyticsService;
@@ -79,5 +84,31 @@ public class AnalyticsController {
     @Operation(summary = "Get organization analytics by ID (Admin only)")
     public ResponseEntity<OrganizationAnalyticsResponse> getOrganizationAnalytics(@PathVariable UUID organizationId) {
         return ResponseEntity.ok(organizationAnalyticsService.getOrganizationAnalytics(organizationId));
+    }
+
+    @GetMapping("/admin")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Get admin dashboard analytics")
+    public ResponseEntity<AdminDashboardResponse> getAdminDashboard() {
+        System.out.println("========================================");
+        System.out.println("ADMIN DASHBOARD ENDPOINT CALLED");
+        System.out.println("========================================");
+        log.info("Admin dashboard endpoint called");
+        try {
+            System.out.println("Calling adminAnalyticsService.getAdminDashboard()...");
+            AdminDashboardResponse response = adminAnalyticsService.getAdminDashboard();
+            System.out.println("Admin dashboard data loaded successfully!");
+            System.out.println("Response: " + response);
+            log.info("Admin dashboard data loaded successfully");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            System.err.println("========================================");
+            System.err.println("ERROR in getAdminDashboard endpoint");
+            System.err.println("Message: " + e.getMessage());
+            System.err.println("========================================");
+            log.error("Error in getAdminDashboard endpoint", e);
+            e.printStackTrace();
+            throw e; // Re-throw to let Spring handle it properly
+        }
     }
 }

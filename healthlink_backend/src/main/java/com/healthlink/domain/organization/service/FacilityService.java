@@ -50,6 +50,14 @@ public class FacilityService {
         return facilityRepository.findByDoctorOwnerId(doctorId).stream().map(this::toDto).toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<FacilityResponse> listAll() {
+        return facilityRepository.findAll().stream()
+                .filter(f -> f.getDeletedAt() == null)
+                .map(this::toDto)
+                .toList();
+    }
+
     public FacilityResponse update(UUID id, FacilityRequest request) {
         Facility f = facilityRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("Facility not found"));
         mapRequestToEntity(request, f);

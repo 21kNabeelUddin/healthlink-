@@ -15,6 +15,8 @@ import {
   AlertTriangle,
   Activity,
   CheckCircle2,
+  Bell,
+  Send,
 } from 'lucide-react';
 
 import { useAuth } from '@/contexts/AuthContext';
@@ -43,8 +45,39 @@ export default function AdminDashboard() {
       const data = await adminApi.getDashboard();
       setDashboardData(data);
     } catch (error: any) {
-      toast.error('Failed to load dashboard data');
+      const errorMessage = error?.response?.data?.message || error?.message || 'Failed to load dashboard data';
+      const status = error?.response?.status;
+      
       console.error('Dashboard load error:', error);
+      console.error('Error response:', error?.response);
+      console.error('Error status:', status);
+      console.error('API URL:', process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080');
+      
+      // Show more detailed error message
+      if (status === 500) {
+        toast.error('Server error: The backend may not have the admin dashboard endpoint deployed yet. Check backend logs.');
+      } else if (status === 401) {
+        toast.error('Authentication failed. Please log in again.');
+        logout();
+        router.replace('/auth/admin/login');
+      } else if (status === 403) {
+        toast.error('Access denied. You do not have admin permissions.');
+      } else {
+        toast.error(`Failed to load dashboard: ${errorMessage} (Status: ${status || 'Unknown'})`);
+      }
+      
+      // Set empty dashboard data so the page doesn't stay stuck loading
+      setDashboardData({
+        totalPatients: 0,
+        totalDoctors: 0,
+        totalAdmins: 0,
+        totalAppointments: 0,
+        totalClinics: 0,
+        totalMedicalHistories: 0,
+        pendingAppointments: 0,
+        confirmedAppointments: 0,
+        completedAppointments: 0,
+      });
     } finally {
       setIsLoading(false);
     }
@@ -56,6 +89,7 @@ export default function AdminDashboard() {
     { icon: Stethoscope, label: 'Manage Doctors', href: '/admin/doctors' },
     { icon: Building2, label: 'Manage Clinics', href: '/admin/clinics' },
     { icon: Calendar, label: 'Appointments', href: '/admin/appointments' },
+    { icon: Bell, label: 'Notifications', href: '/admin/notifications/history' },
     { icon: AlertTriangle, label: 'System Alerts', href: '/admin/dashboard#alerts' },
     { icon: Settings, label: 'Settings', href: '/admin/profile' },
   ];
@@ -63,12 +97,12 @@ export default function AdminDashboard() {
   const stats = useMemo(() => {
     if (!dashboardData) return [];
     return [
-      { icon: Users, label: 'Total Patients', value: dashboardData.totalPatients, gradient: 'from-blue-500 to-cyan-500' },
-      { icon: Stethoscope, label: 'Total Doctors', value: dashboardData.totalDoctors, gradient: 'from-emerald-500 to-teal-500' },
-      { icon: Shield, label: 'Admins', value: dashboardData.totalAdmins, gradient: 'from-slate-500 to-slate-700' },
-      { icon: Calendar, label: 'Appointments', value: dashboardData.totalAppointments, gradient: 'from-indigo-500 to-purple-500' },
-      { icon: Building2, label: 'Clinics', value: dashboardData.totalClinics, gradient: 'from-orange-500 to-amber-500' },
-      { icon: CheckCircle2, label: 'Completed', value: dashboardData.completedAppointments, gradient: 'from-green-500 to-lime-500' },
+      { icon: Users, label: 'Total Patients', value: dashboardData.totalPatients ?? 0, gradient: 'from-blue-500 to-cyan-500' },
+      { icon: Stethoscope, label: 'Total Doctors', value: dashboardData.totalDoctors ?? 0, gradient: 'from-emerald-500 to-teal-500' },
+      { icon: Shield, label: 'Admins', value: dashboardData.totalAdmins ?? 0, gradient: 'from-slate-500 to-slate-700' },
+      { icon: Calendar, label: 'Appointments', value: dashboardData.totalAppointments ?? 0, gradient: 'from-indigo-500 to-purple-500' },
+      { icon: Building2, label: 'Clinics', value: dashboardData.totalClinics ?? 0, gradient: 'from-orange-500 to-amber-500' },
+      { icon: CheckCircle2, label: 'Completed', value: dashboardData.completedAppointments ?? 0, gradient: 'from-green-500 to-lime-500' },
     ];
   }, [dashboardData]);
 
@@ -118,7 +152,7 @@ export default function AdminDashboard() {
                   key={stat.label}
                   icon={stat.icon}
                   label={stat.label}
-                  value={stat.value.toString()}
+                  value={(stat.value ?? 0).toString()}
                 />
               ))}
             </div>

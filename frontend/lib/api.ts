@@ -25,6 +25,11 @@ import type {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
+// Debug: Log the API URL being used
+if (typeof window !== 'undefined') {
+  console.log('🔗 Frontend API URL:', API_URL);
+}
+
 const api = axios.create({
   baseURL: API_URL,
   headers: {
@@ -872,34 +877,54 @@ export const adminApi = {
     return response.data;
   },
 
+  // Custom Notifications
+  sendCustomNotification: async (data: {
+    title: string;
+    message: string;
+    notificationType: 'INFO' | 'WARNING' | 'ALERT' | 'ANNOUNCEMENT' | 'SYSTEM_UPDATE';
+    priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+    recipientType: 'INDIVIDUAL_USER' | 'INDIVIDUAL_DOCTOR' | 'ALL_USERS' | 'ALL_DOCTORS' | 'SELECTED_USERS' | 'SELECTED_DOCTORS';
+    recipientIds?: string[];
+    channels: ('IN_APP' | 'EMAIL' | 'SMS' | 'PUSH')[];
+    scheduledAt?: string;
+  }): Promise<any> => {
+    const response = await api.post('/api/v1/admin/notifications/send', data);
+    return response.data;
+  },
+
+  getNotificationHistory: async (page: number = 0, size: number = 20): Promise<any> => {
+    const response = await api.get(`/api/v1/admin/notifications/history?page=${page}&size=${size}`);
+    return response.data;
+  },
+
   // Patient Management
   getAllPatients: async (): Promise<User[]> => {
-    const response = await api.get('/api/v1/users?role=PATIENT');
+    const response = await api.get('/api/v1/admin/users?role=PATIENT');
     return response.data;
   },
 
   getPatientById: async (patientId: string): Promise<User> => {
-    const response = await api.get(`/api/v1/users/${patientId}`);
+    const response = await api.get(`/api/v1/admin/users/${patientId}`);
     return response.data;
   },
 
   deletePatient: async (patientId: string): Promise<void> => {
-    await api.delete(`/api/v1/users/${patientId}`);
+    await api.delete(`/api/v1/admin/users/${patientId}`);
   },
 
   // Doctor Management
   getAllDoctors: async (): Promise<User[]> => {
-    const response = await api.get('/api/v1/users?role=DOCTOR');
+    const response = await api.get('/api/v1/admin/users?role=DOCTOR');
     return response.data;
   },
 
   getDoctorById: async (doctorId: string): Promise<User> => {
-    const response = await api.get(`/api/v1/users/${doctorId}`);
+    const response = await api.get(`/api/v1/admin/users/${doctorId}`);
     return response.data;
   },
 
   deleteDoctor: async (doctorId: string): Promise<void> => {
-    await api.delete(`/api/v1/users/${doctorId}`);
+    await api.delete(`/api/v1/admin/users/${doctorId}`);
   },
 
   // Admin Management

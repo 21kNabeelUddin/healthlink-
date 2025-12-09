@@ -386,27 +386,23 @@ export default function DoctorAppointmentDetailPage() {
           <Card className="p-5 shadow-sm">
             <div className="flex flex-wrap gap-3">
               {appointment.appointmentType === 'ONLINE' && (
-                <Button
-                  variant="primary"
-                  disabled={!appointment.zoomStartUrl}
-                  className="flex items-center gap-2"
-                  asChild
-                >
-                  {appointment.zoomStartUrl ? (
-                    <Link href={appointment.zoomStartUrl} target="_blank">
-                      <>
-                        <Video className="w-4 h-4" />
-                        Start Zoom Meeting
-                        <ExternalLink className="w-3 h-3" />
-                      </>
-                    </Link>
-                  ) : (
-                    <>
-                      <AlertCircle className="w-4 h-4" />
-                      Zoom link unavailable
-                    </>
-                  )}
-                </Button>
+                appointment.zoomStartUrl ? (
+                  <Link href={appointment.zoomStartUrl} target="_blank">
+                    <Button
+                      variant="primary"
+                      className="flex items-center gap-2"
+                    >
+                      <Video className="w-4 h-4" />
+                      Start Zoom Meeting
+                      <ExternalLink className="w-3 h-3" />
+                    </Button>
+                  </Link>
+                ) : (
+                  <Button variant="primary" disabled className="flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4" />
+                    Zoom link unavailable
+                  </Button>
+                )
               )}
 
               {isActiveAppointment(appointment.status) && (

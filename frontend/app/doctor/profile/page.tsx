@@ -126,9 +126,11 @@ export default function DoctorProfilePage() {
                 </Badge>
               </div>
               <div className="mt-4">
-                <Button asChild variant="outline" className="w-full">
-                  <Link href="/doctor/clinics">Go to Clinics</Link>
-                </Button>
+                <Link href="/doctor/clinics">
+                  <Button variant="outline" className="w-full">
+                    Go to Clinics
+                  </Button>
+                </Link>
               </div>
             </Card>
 

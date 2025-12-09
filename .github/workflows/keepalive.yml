@@ -9,15 +9,18 @@ on:
 jobs:
   ping-backend:
     runs-on: ubuntu-latest
-    env:
-      BACKEND_URL: ${{ secrets.KEEPALIVE_BACKEND_URL }}
     steps:
       - name: Validate keepalive URL
         run: |
+          # Prefer secret; fallback to public Railway health endpoint.
+          BACKEND_URL="${{ secrets.KEEPALIVE_BACKEND_URL }}"
+          BACKEND_URL="${BACKEND_URL:-https://healthlinkwebapp-production.up.railway.app/actuator/health}"
           if [ -z "$BACKEND_URL" ]; then
-            echo "KEEPALIVE_BACKEND_URL secret is not set."
+            echo "No keepalive URL configured."
             exit 1
           fi
+          echo "Using $BACKEND_URL"
+          echo "BACKEND_URL=$BACKEND_URL" >> $GITHUB_ENV
       - name: Warm up backend
         run: |
           curl -sSf --max-time 10 --retry 3 --retry-delay 2 "$BACKEND_URL" >/dev/null

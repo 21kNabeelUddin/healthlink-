@@ -42,17 +42,17 @@ export default function EditAppointmentPage() {
     setIsLoadingData(true);
     try {
       const appointment = await appointmentsApi.getById(appointmentId);
-      const dateTime = new Date(appointment.scheduledAt || appointment.appointmentDateTime);
+      const dateTime = new Date(appointment.appointmentDateTime);
       const localDateTime = new Date(dateTime.getTime() - dateTime.getTimezoneOffset() * 60000)
         .toISOString()
         .slice(0, 16);
       
       setValue('doctorId', parseInt(appointment.doctorId?.toString() || '0'));
       setValue('appointmentDateTime', localDateTime);
-      setValue('reason', appointment.chiefComplaint || appointment.reason || '');
+      setValue('reason', appointment.reason || '');
       setValue('notes', appointment.notes || '');
-      setValue('appointmentType', appointment.consultationType === 'VIDEO_CALL' ? 'ONLINE' : 'ONSITE');
-      setValue('clinicId', appointment.facilityId ? parseInt(appointment.facilityId.toString()) : undefined);
+      setValue('appointmentType', appointment.appointmentType);
+      setValue('clinicId', appointment.clinicId || undefined);
     } catch (error: any) {
       toast.error('Failed to load appointment');
       router.push('/patient/appointments');
@@ -129,12 +129,12 @@ export default function EditAppointmentPage() {
                   Select Clinic
                 </label>
                 <select
-                  {...register('clinicId', { valueAsNumber: true })}
+                  {...register('clinicId')}
                   className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                 >
                   <option value="">Select a clinic (optional)</option>
                   {clinics.map((clinic) => (
-                    <option key={clinic.id} value={clinic.id}>
+                    <option key={clinic.id} value={clinic.id.toString()}>
                       {clinic.name} - {clinic.address}
                     </option>
                   ))}

@@ -76,12 +76,12 @@ export default function PatientDashboard() {
     status: Appointment['status'],
   ): 'pending' | 'confirmed' | 'completed' | 'cancelled' => {
     switch (status) {
-      case 'PENDING':
+      case 'IN_PROGRESS':
         return 'pending';
       case 'COMPLETED':
         return 'completed';
       case 'CANCELLED':
-      case 'REJECTED':
+      case 'NO_SHOW':
         return 'cancelled';
       default:
         return 'confirmed';

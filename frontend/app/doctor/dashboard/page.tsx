@@ -136,12 +136,12 @@ export default function DoctorDashboard() {
     status: Appointment['status'],
   ): 'pending' | 'confirmed' | 'completed' | 'cancelled' => {
     switch (status) {
-      case 'PENDING':
+      case 'IN_PROGRESS':
         return 'pending';
       case 'COMPLETED':
         return 'completed';
       case 'CANCELLED':
-      case 'REJECTED':
+      case 'NO_SHOW':
         return 'cancelled';
       default:
         return 'confirmed';
@@ -258,7 +258,7 @@ export default function DoctorDashboard() {
                           type={apt.appointmentType === 'ONLINE' ? 'online' : 'onsite'}
                           clinicName={apt.clinicName}
                           status={mapStatus(apt.status)}
-                          showActions={apt.status === 'PENDING'}
+                          showActions={apt.status === 'IN_PROGRESS'}
                           onConfirm={() => handleAppointmentAction(apt.id.toString(), 'confirm')}
                           onReject={() => handleAppointmentAction(apt.id.toString(), 'reject')}
                           onJoinZoom={

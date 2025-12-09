@@ -71,12 +71,8 @@ export default function PatientNotificationsPage() {
         patientApi.getMedicalHistories(user.id),
       ]);
 
-      if (appointmentsRes.success && appointmentsRes.data) {
-        setAppointments(appointmentsRes.data);
-      }
-      if (medicalHistoryRes.success && medicalHistoryRes.data) {
-        setMedicalHistory(medicalHistoryRes.data);
-      }
+      setAppointments(Array.isArray(appointmentsRes) ? appointmentsRes : []);
+      setMedicalHistory(Array.isArray(medicalHistoryRes) ? medicalHistoryRes : []);
     } catch (error) {
       toast.error('Failed to load notifications');
     } finally {
@@ -93,7 +89,7 @@ export default function PatientNotificationsPage() {
       } on ${format(new Date(apt.appointmentDateTime), 'MMM dd, h:mm a')}`;
 
       switch (apt.status) {
-        case 'PENDING':
+        case 'IN_PROGRESS':
           items.push({
             id: `apt-${apt.id}-pending`,
             title: 'Appointment awaiting confirmation',
@@ -103,7 +99,7 @@ export default function PatientNotificationsPage() {
             action: { label: 'View appointment', href: `/patient/appointments` },
           });
           break;
-        case 'CONFIRMED':
+        case 'IN_PROGRESS':
           items.push({
             id: `apt-${apt.id}-confirmed`,
             title: 'Appointment confirmed',
@@ -126,7 +122,7 @@ export default function PatientNotificationsPage() {
           });
           break;
         case 'CANCELLED':
-        case 'REJECTED':
+        case 'NO_SHOW':
           items.push({
             id: `apt-${apt.id}-cancelled`,
             title: 'Appointment update',
@@ -142,7 +138,7 @@ export default function PatientNotificationsPage() {
     const soonAppointments = appointments.filter((apt) => {
       const diffHours =
         (new Date(apt.appointmentDateTime).getTime() - Date.now()) / (1000 * 60 * 60);
-      return diffHours > 0 && diffHours <= 48 && apt.status === 'CONFIRMED';
+      return diffHours > 0 && diffHours <= 48 && apt.status === 'IN_PROGRESS';
     });
 
     soonAppointments.forEach((apt) => {

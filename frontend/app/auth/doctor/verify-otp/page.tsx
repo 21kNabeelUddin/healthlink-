@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { doctorApi, getUserFriendlyError } from '@/lib/api';
@@ -12,7 +12,7 @@ interface OtpForm {
   otp: string;
 }
 
-export default function DoctorVerifyOtp() {
+function DoctorVerifyOtpContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
@@ -78,6 +78,20 @@ export default function DoctorVerifyOtp() {
         </form>
       </div>
     </div>
+  );
+}
+
+export default function DoctorVerifyOtp() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+        <div className="bg-white rounded-lg shadow-xl p-8 w-full max-w-md">
+          <div className="text-center">Loading...</div>
+        </div>
+      </div>
+    }>
+      <DoctorVerifyOtpContent />
+    </Suspense>
   );
 }
 

@@ -47,13 +47,9 @@ export default function PatientProfilePage() {
   const onSubmit = async (values: ProfileFormValues) => {
     if (!user?.id) return;
     try {
-      const response = await patientApi.updateProfile(user.id, values);
-      if (response.success && response.data) {
-        updateUser(response.data);
-        toast.success(response.message || 'Profile updated successfully');
-      } else {
-        toast.error(response.message || 'Failed to update profile');
-      }
+      const response = await patientApi.updateProfile(values);
+      updateUser(response);
+      toast.success('Profile updated successfully');
     } catch (error) {
       toast.error('Failed to update profile');
     }

@@ -19,6 +19,11 @@ export interface User {
   specialization?: string;
   licenseNumber?: string;
   yearsOfExperience?: number;
+  experienceYears?: number;
+  availabilityNote?: string;
+  clinicCount?: number;
+  activeClinicCount?: number;
+  updatedAt?: string;
 }
 
 // API Response Types

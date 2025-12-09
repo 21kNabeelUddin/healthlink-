@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSearchParams } from 'next/navigation';
 import { prescriptionsApi } from '@/lib/api';
@@ -44,7 +44,7 @@ interface Prescription {
   }>;
 }
 
-export default function PrescriptionsPage() {
+function PrescriptionsPageContent() {
   const { user } = useAuth();
   const searchParams = useSearchParams();
   const appointmentId = searchParams.get('appointmentId');
@@ -296,6 +296,18 @@ export default function PrescriptionsPage() {
         </div>
       </div>
     </DashboardLayout>
+  );
+}
+
+export default function PrescriptionsPage() {
+  return (
+    <Suspense fallback={
+      <DashboardLayout requiredUserType="PATIENT">
+        <div className="text-center py-12 text-slate-600">Loading...</div>
+      </DashboardLayout>
+    }>
+      <PrescriptionsPageContent />
+    </Suspense>
   );
 }
 

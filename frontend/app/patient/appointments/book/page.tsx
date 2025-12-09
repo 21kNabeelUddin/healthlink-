@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 
-export default function BookAppointmentPage() {
+function BookAppointmentPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   useEffect(() => {
@@ -26,6 +26,23 @@ export default function BookAppointmentPage() {
         </div>
       </div>
     </DashboardLayout>
+  );
+}
+
+export default function BookAppointmentPage() {
+  return (
+    <Suspense fallback={
+      <DashboardLayout requiredUserType="PATIENT">
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-teal-500 border-t-transparent mb-4"></div>
+            <p className="text-slate-600">Loading...</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    }>
+      <BookAppointmentPageContent />
+    </Suspense>
   );
 }
 

@@ -61,23 +61,9 @@ export default function AppointmentsPage() {
       );
       
       if (completedAppointments.length > 0) {
-        // Show notification and auto-redirect to first completed appointment review
         const firstCompleted = completedAppointments[0];
         setTimeout(() => {
-          toast.success('Your appointment has been completed. Please rate your experience.', {
-            duration: 5000,
-            action: {
-              label: 'Rate Now',
-              onClick: () => {
-                if (autoRedirectTimeoutRef.current) {
-                  clearTimeout(autoRedirectTimeoutRef.current);
-                  autoRedirectTimeoutRef.current = null;
-                }
-                router.push(`/patient/appointments/${firstCompleted.id}/review`);
-              },
-            },
-          });
-          // Auto-redirect after 5 seconds if user doesn't click
+          toast.success('Your appointment has been completed. Please rate your experience.');
           autoRedirectTimeoutRef.current = setTimeout(() => {
             router.push(`/patient/appointments/${firstCompleted.id}/review`);
             autoRedirectTimeoutRef.current = null;
@@ -138,10 +124,6 @@ export default function AppointmentsPage() {
         return 'bg-blue-100 text-blue-800 border border-blue-200';
       case 'COMPLETED':
         return 'bg-teal-100 text-teal-800 border border-teal-200';
-      case 'CANCELLED':
-        return 'bg-red-100 text-red-800 border border-red-200';
-      case 'NO_SHOW':
-        return 'bg-gray-100 text-gray-800 border border-gray-200';
       case 'CANCELLED':
         return 'bg-red-100 text-red-800 border border-red-200';
       case 'NO_SHOW':
@@ -274,7 +256,7 @@ export default function AppointmentsPage() {
                           </div>
                         </div>
                       </div>
-                      {appointment.appointmentType === 'ONLINE' && appointment.zoomJoinUrl && appointment.status === 'CONFIRMED' && (
+                      {appointment.appointmentType === 'ONLINE' && appointment.zoomJoinUrl && appointment.status === 'IN_PROGRESS' && (
                         <a
                           href={appointment.zoomJoinUrl}
                           target="_blank"

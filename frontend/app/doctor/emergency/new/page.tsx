@@ -64,7 +64,6 @@ export default function NewEmergencyPatientPage() {
         // Create patient + appointment in one call
         const request: CreateEmergencyPatientAndAppointmentRequest = {
           patientName: data.patientName,
-          email: data.email,
           phoneNumber: data.phoneNumber || undefined,
           appointmentRequest: {
             doctorId: user.id.toString(),
@@ -85,7 +84,6 @@ export default function NewEmergencyPatientPage() {
         // Create patient only
         const request: CreateEmergencyPatientRequest = {
           patientName: data.patientName,
-          email: data.email,
           phoneNumber: data.phoneNumber || undefined,
         };
 

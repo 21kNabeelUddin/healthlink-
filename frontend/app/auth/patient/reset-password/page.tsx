@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { authApi, getUserFriendlyError } from '@/lib/api';
@@ -16,7 +16,7 @@ interface ResetPasswordForm {
   confirmPassword: string;
 }
 
-export default function PatientResetPassword() {
+function PatientResetPasswordContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const emailFromQuery = searchParams.get('email') ?? '';
@@ -96,6 +96,18 @@ export default function PatientResetPassword() {
         </Button>
       </form>
     </AuthLayout>
+  );
+}
+
+export default function PatientResetPassword() {
+  return (
+    <Suspense fallback={
+      <AuthLayout role="PATIENT" title="Reset Password" subtitle="Loading...">
+        <div className="text-center py-8">Loading...</div>
+      </AuthLayout>
+    }>
+      <PatientResetPasswordContent />
+    </Suspense>
   );
 }
 

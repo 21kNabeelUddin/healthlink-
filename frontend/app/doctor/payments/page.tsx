@@ -139,28 +139,24 @@ export default function DoctorPaymentsPage() {
           <Button
             variant={filter === '' ? 'primary' : 'outline'}
             onClick={() => setFilter('')}
-            size="sm"
           >
             All
           </Button>
           <Button
             variant={filter === 'PENDING' ? 'primary' : 'outline'}
             onClick={() => setFilter('PENDING')}
-            size="sm"
           >
             Pending
           </Button>
           <Button
             variant={filter === 'CAPTURED' ? 'primary' : 'outline'}
             onClick={() => setFilter('CAPTURED')}
-            size="sm"
           >
             Verified
           </Button>
           <Button
             variant={filter === 'REJECTED' ? 'primary' : 'outline'}
             onClick={() => setFilter('REJECTED')}
-            size="sm"
           >
             Rejected
           </Button>

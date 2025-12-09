@@ -194,7 +194,7 @@ export default function MedicalHistoryPage() {
                         <Button
                           variant="danger"
                           className="w-full sm:w-auto"
-                          onClick={() => handleDelete(history.id)}
+                          onClick={() => handleDelete(String(history.id))}
                         >
                           Delete
                         </Button>

@@ -32,15 +32,14 @@ export default function EditMedicalHistoryPage() {
     setIsLoadingData(true);
     try {
       const record = await medicalRecordsApi.getById(historyId);
-      // Map medical record to medical history format
-      setValue('condition', record.title || '');
-      setValue('diagnosisDate', record.recordDate ? record.recordDate.split('T')[0] : '');
-      setValue('description', record.summary || '');
-      setValue('treatment', record.details?.split('\n\n')[0] || '');
-      setValue('medications', record.details?.split('Medications: ')[1]?.split('\n')[0] || '');
-      setValue('doctorName', record.details?.split('Doctor: ')[1]?.split('\n')[0] || '');
-      setValue('hospitalName', record.details?.split('Hospital: ')[1] || '');
-      setValue('status', 'ACTIVE');
+      setValue('condition', record.condition || '');
+      setValue('diagnosisDate', record.diagnosisDate ? record.diagnosisDate.split('T')[0] : '');
+      setValue('description', record.description || '');
+      setValue('treatment', record.treatment || '');
+      setValue('medications', record.medications || '');
+      setValue('doctorName', record.doctorName || '');
+      setValue('hospitalName', record.hospitalName || '');
+      setValue('status', record.status || 'ACTIVE');
     } catch (error: any) {
       toast.error('Failed to load medical history');
       router.push('/patient/medical-history');
@@ -54,12 +53,7 @@ export default function EditMedicalHistoryPage() {
 
     setIsLoading(true);
     try {
-      await medicalRecordsApi.update(historyId, {
-        title: data.condition,
-        summary: data.description,
-        details: `${data.treatment}\n\nMedications: ${data.medications}\nDoctor: ${data.doctorName}\nHospital: ${data.hospitalName}`,
-        recordDate: data.diagnosisDate,
-      });
+      await medicalRecordsApi.update(historyId, data);
 
       toast.success('Medical history updated successfully!');
       router.push('/patient/medical-history');

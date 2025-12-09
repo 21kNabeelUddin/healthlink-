@@ -114,9 +114,10 @@ export default function DoctorDashboard() {
     .length;
 
   const patientSummaries = useMemo(() => {
-    const map = new Map<number, { name: string; lastVisit: string; condition: string }>();
+    if (!Array.isArray(appointments)) return [];
+    const map = new Map<string, { name: string; lastVisit: string; condition: string }>();
     appointments.forEach((apt) => {
-      map.set(apt.patientId, {
+      map.set(String(apt.patientId), {
         name: apt.patientName,
         lastVisit: format(new Date(apt.appointmentDateTime), 'MMM dd, yyyy'),
         condition: apt.reason,

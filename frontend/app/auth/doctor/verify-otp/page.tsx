@@ -36,7 +36,11 @@ export default function DoctorVerifyOtp() {
       });
 
       // Backend returns a plain success string (e.g. "Email verified successfully")
-      toast.success(message || 'Email verified successfully');
+      const successMessage =
+        typeof message === 'string'
+          ? message
+          : (message as any)?.message || 'Email verified successfully';
+      toast.success(successMessage);
       router.push('/auth/doctor/login');
     } catch (error: any) {
       toast.error(error.userMessage || getUserFriendlyError(error, 'OTP verification failed'));

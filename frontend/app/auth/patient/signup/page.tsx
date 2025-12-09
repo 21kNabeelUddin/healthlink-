@@ -36,7 +36,6 @@ export default function PatientSignup() {
         phoneNumber: data.phoneNumber,
         dateOfBirth: data.dateOfBirth ? `${data.dateOfBirth}T00:00:00` : undefined,
         address: data.address,
-        role: 'PATIENT',
       });
 
       // For patients, backend does NOT return tokens until email is verified.

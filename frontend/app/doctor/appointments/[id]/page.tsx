@@ -135,6 +135,13 @@ export default function DoctorAppointmentDetailPage() {
     return now >= endTime; // Can mark no show only after appointment end time
   };
 
+  const formatDateSafe = (value?: string, pattern = 'MMM dd, yyyy') => {
+    if (!value) return 'N/A';
+    const d = new Date(value);
+    if (isNaN(d.getTime())) return 'N/A';
+    return format(d, pattern);
+  };
+
   const getStatusLabel = (status: string) =>
     status
       .split('_')

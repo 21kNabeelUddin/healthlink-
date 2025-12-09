@@ -85,13 +85,15 @@ export default function AdminDashboard() {
 
   const sidebarItems = [
     { icon: LayoutDashboard, label: 'Dashboard', href: '/admin/dashboard' },
-    { icon: Users, label: 'Manage Patients', href: '/admin/patients' },
-    { icon: Stethoscope, label: 'Manage Doctors', href: '/admin/doctors' },
-    { icon: Building2, label: 'Manage Clinics', href: '/admin/clinics' },
+    { icon: Users, label: 'Users', href: '/admin/users' },
+    { icon: Users, label: 'Patients', href: '/admin/patients' },
+    { icon: Stethoscope, label: 'Doctors', href: '/admin/doctors' },
+    { icon: Building2, label: 'Clinics', href: '/admin/clinics' },
     { icon: Calendar, label: 'Appointments', href: '/admin/appointments' },
     { icon: Bell, label: 'Notifications', href: '/admin/notifications/history' },
-    { icon: AlertTriangle, label: 'System Alerts', href: '/admin/dashboard#alerts' },
-    { icon: Settings, label: 'Settings', href: '/admin/profile' },
+    { icon: Activity, label: 'Analytics', href: '/admin/analytics' },
+    { icon: Shield, label: 'Audit & Compliance', href: '/admin/audit' },
+    { icon: Settings, label: 'Settings', href: '/admin/settings' },
   ];
 
   const stats = useMemo(() => {
@@ -209,14 +211,123 @@ export default function AdminDashboard() {
               </div>
 
               <div className="space-y-6" id="alerts">
+                {/* Top Banner with Critical Alerts */}
+                <div className="bg-gradient-to-r from-red-500 to-orange-500 rounded-2xl p-6 text-white shadow-lg">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <AlertTriangle className="w-5 h-5" />
+                      <h3 className="text-lg font-semibold">Critical Alerts</h3>
+                    </div>
+                    <Badge variant="secondary" className="bg-white/20 text-white">2 Active</Badge>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="bg-white/10 rounded-lg p-3">
+                      <p className="text-sm font-medium">3 doctors need license renewal this month</p>
+                    </div>
+                    <div className="bg-white/10 rounded-lg p-3">
+                      <p className="text-sm font-medium">Appointment cancellation rate increased 15%</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Live Activity Feed */}
                 <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-slate-200 shadow-lg">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg text-slate-900">System Alerts</h3>
-                    <Badge variant="destructive">Live</Badge>
+                    <div className="flex items-center gap-2">
+                      <Activity className="w-5 h-5 text-slate-700" />
+                      <h3 className="text-lg text-slate-900">Live Activity Feed</h3>
+                    </div>
+                    <Badge variant="outline">Live</Badge>
                   </div>
-                  <p className="text-sm text-slate-500">
-                    Integrate real alerts once backend endpoints are available.
-                  </p>
+                  <div className="space-y-3 max-h-64 overflow-y-auto">
+                    <div className="flex items-start gap-3 p-2 rounded-lg hover:bg-slate-50">
+                      <div className="w-2 h-2 bg-green-500 rounded-full mt-2"></div>
+                      <div className="flex-1">
+                        <p className="text-sm text-slate-700">
+                          <span className="font-semibold">New patient registered:</span> John Doe
+                        </p>
+                        <p className="text-xs text-slate-500">2 minutes ago</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3 p-2 rounded-lg hover:bg-slate-50">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
+                      <div className="flex-1">
+                        <p className="text-sm text-slate-700">
+                          <span className="font-semibold">Appointment booked:</span> Dr. Smith - Patient: Jane
+                        </p>
+                        <p className="text-xs text-slate-500">5 minutes ago</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3 p-2 rounded-lg hover:bg-slate-50">
+                      <div className="w-2 h-2 bg-purple-500 rounded-full mt-2"></div>
+                      <div className="flex-1">
+                        <p className="text-sm text-slate-700">
+                          <span className="font-semibold">Doctor logged in:</span> Dr. Ahmed
+                        </p>
+                        <p className="text-xs text-slate-500">10 minutes ago</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Quick Actions Panel */}
+                <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-slate-200 shadow-lg">
+                  <h3 className="text-lg text-slate-900 mb-4">Quick Actions</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <Link href="/admin/notifications/new">
+                      <Button variant="outline" className="w-full h-auto py-4 flex flex-col gap-2">
+                        <Send className="w-5 h-5" />
+                        <span className="text-xs">Send Notification</span>
+                      </Button>
+                    </Link>
+                    <Link href="/admin/users">
+                      <Button variant="outline" className="w-full h-auto py-4 flex flex-col gap-2">
+                        <Users className="w-5 h-5" />
+                        <span className="text-xs">Manage Users</span>
+                      </Button>
+                    </Link>
+                    <Link href="/admin/appointments">
+                      <Button variant="outline" className="w-full h-auto py-4 flex flex-col gap-2">
+                        <Calendar className="w-5 h-5" />
+                        <span className="text-xs">View Appointments</span>
+                      </Button>
+                    </Link>
+                    <Link href="/admin/analytics">
+                      <Button variant="outline" className="w-full h-auto py-4 flex flex-col gap-2">
+                        <Activity className="w-5 h-5" />
+                        <span className="text-xs">View Analytics</span>
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+
+                {/* Trend Charts */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-slate-200 shadow-lg">
+                    <h3 className="text-lg text-slate-900 mb-4">User Growth Trend</h3>
+                    <div className="h-48 flex items-center justify-center text-slate-400 text-sm">
+                      Chart visualization would go here
+                    </div>
+                  </div>
+                  <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-slate-200 shadow-lg">
+                    <h3 className="text-lg text-slate-900 mb-4">Appointment Trends</h3>
+                    <div className="h-48 flex items-center justify-center text-slate-400 text-sm">
+                      Chart visualization would go here
+                    </div>
+                  </div>
+                </div>
+
+                {/* Time-based Filters */}
+                <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-slate-200 shadow-lg">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg text-slate-900">Time Filters</h3>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm">Today</Button>
+                      <Button variant="outline" size="sm">This Week</Button>
+                      <Button variant="outline" size="sm">This Month</Button>
+                      <Button variant="default" size="sm">All Time</Button>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl p-6 text-white shadow-lg">

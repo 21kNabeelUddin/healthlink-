@@ -11,9 +11,12 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
+import jakarta.annotation.PostConstruct;
 import java.util.Map;
 
 /**
@@ -27,12 +30,40 @@ public class EmailService {
 
     private final JavaMailSender mailSender;
     private final TemplateEngine templateEngine;
+    
+    @Autowired
+    private Environment environment;
 
     @Value("${healthlink.mail.from:noreply@healthlink.com}")
     private String fromEmail;
 
     @Value("${healthlink.mail.from-name:HealthLink Platform}")
     private String fromName;
+
+    @PostConstruct
+    public void logEmailConfiguration() {
+        String mailHost = environment.getProperty("spring.mail.host", "NOT SET");
+        String mailPort = environment.getProperty("spring.mail.port", "NOT SET");
+        String mailUsername = environment.getProperty("spring.mail.username", "NOT SET");
+        boolean mailAuth = environment.getProperty("spring.mail.properties.mail.smtp.auth", Boolean.class, false);
+        boolean starttls = environment.getProperty("spring.mail.properties.mail.smtp.starttls.enable", Boolean.class, false);
+        
+        log.info("📧 Email Service Configuration:");
+        log.info("   Host: {}", mailHost);
+        log.info("   Port: {}", mailPort);
+        log.info("   Username: {}", mailUsername.isEmpty() ? "NOT SET" : mailUsername);
+        log.info("   Auth: {}", mailAuth);
+        log.info("   STARTTLS: {}", starttls);
+        log.info("   From: {}", fromEmail);
+        log.info("   From Name: {}", fromName);
+        
+        if (mailHost.equals("NOT SET") || mailHost.equals("localhost")) {
+            log.error("❌ MAIL_HOST is not properly configured! Current value: {}", mailHost);
+        }
+        if (mailUsername.equals("NOT SET") || mailUsername.isEmpty()) {
+            log.error("❌ MAIL_USERNAME is not set!");
+        }
+    }
 
     /**
      * Send password reset email with OTP
@@ -356,6 +387,9 @@ public class EmailService {
      */
     @Async
     public void sendSimpleEmail(String toEmail, String subject, String body) {
+        log.info("📧 Attempting to send email to: {} with subject: {}", toEmail, subject);
+        log.info("📧 Email from: {}", fromEmail);
+        
         try {
             SimpleMailMessage message = new SimpleMailMessage();
             message.setFrom(fromEmail);
@@ -363,7 +397,9 @@ public class EmailService {
             message.setSubject(subject);
             message.setText(body);
 
+            log.info("📧 Sending email via mailSender...");
             mailSender.send(message);
+            log.info("✅ Email sent successfully to: {}", toEmail);
 
             SafeLogger.get(EmailService.class)
                 .event("email_sent")
@@ -371,11 +407,22 @@ public class EmailService {
                 .withMasked("email", toEmail)
                 .log();
         } catch (Exception e) {
+            log.error("❌ Failed to send email to: {} - Error: {}", toEmail, e.getMessage(), e);
+            log.error("❌ Exception type: {}", e.getClass().getName());
+            if (e.getCause() != null) {
+                log.error("❌ Caused by: {}", e.getCause().getMessage());
+            }
+            
             SafeLogger.get(EmailService.class)
                 .event("email_send_failed")
                 .with("type", "simple")
                 .withMasked("email", toEmail)
+                .with("error", e.getMessage())
+                .with("error_class", e.getClass().getName())
                 .log();
+            
+            // Re-throw so caller knows it failed
+            throw new RuntimeException("Failed to send email: " + e.getMessage(), e);
         }
     }
 

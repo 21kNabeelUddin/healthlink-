@@ -1,15 +1,17 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { adminApi } from '@/lib/api';
-import { Appointment } from '@/types';
-import { toast } from 'react-hot-toast';
-import DashboardLayout from '@/components/layout/DashboardLayout';
-import Card from '@/components/ui/Card';
-import Button from '@/components/ui/Button';
-import { format } from 'date-fns';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function AdminAppointmentsPage() {
+  const router = useRouter();
+  
+  useEffect(() => {
+    // Redirect to enhanced appointments page
+    router.replace('/admin/appointments/enhanced');
+  }, [router]);
+
+  return null;
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);

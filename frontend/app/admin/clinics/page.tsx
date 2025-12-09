@@ -28,7 +28,7 @@ export default function AdminClinicsPage() {
     }
   };
 
-  const handleDelete = async (clinicId: string) => {
+  const handleDelete = async (clinicId: string | number) => {
     if (!confirm('Are you sure you want to delete this clinic?')) return;
 
     try {
@@ -82,7 +82,7 @@ export default function AdminClinicsPage() {
                 <Button
                   variant="danger"
                   className="w-full"
-                  onClick={() => handleDelete(clinic.id)}
+                  onClick={() => handleDelete(String(clinic.id))}
                 >
                   Delete
                 </Button>

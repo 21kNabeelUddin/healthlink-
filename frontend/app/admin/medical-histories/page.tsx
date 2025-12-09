@@ -21,10 +21,8 @@ export default function AdminMedicalHistoriesPage() {
   const loadHistories = async () => {
     setIsLoading(true);
     try {
-      const response = await adminApi.getAllMedicalHistories(undefined, statusFilter || undefined);
-      if (response.success && response.data) {
-        setHistories(response.data);
-      }
+      const response = await adminApi.getAllMedicalHistories(undefined);
+      setHistories(response ?? []);
     } catch (error: any) {
       toast.error('Failed to load medical histories');
     } finally {
@@ -36,13 +34,9 @@ export default function AdminMedicalHistoriesPage() {
     if (!confirm('Are you sure you want to delete this medical history?')) return;
 
     try {
-      const response = await adminApi.deleteMedicalHistory(historyId);
-      if (response.success) {
-        toast.success('Medical history deleted successfully');
-        loadHistories();
-      } else {
-        toast.error(response.message);
-      }
+      await adminApi.deleteMedicalHistory(String(historyId));
+      toast.success('Medical history deleted successfully');
+      loadHistories();
     } catch (error: any) {
       toast.error('Failed to delete medical history');
     }

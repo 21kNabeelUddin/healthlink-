@@ -41,7 +41,7 @@ export default function EditClinicPage() {
         setValue('city', clinic.city);
         setValue('state', clinic.state || '');
         setValue('zipCode', clinic.zipCode || '');
-        setValue('phoneNumber', clinic.phoneNumber || clinic.phone || '');
+        setValue('phoneNumber', clinic.phoneNumber || '');
         setValue('email', clinic.email || '');
         setValue('description', clinic.description || '');
         setValue('openingTime', clinic.openingHours?.monday?.split('-')[0] || '09:00');

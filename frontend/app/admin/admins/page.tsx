@@ -28,7 +28,7 @@ export default function AdminAdminsPage() {
     }
   };
 
-  const handleDelete = async (adminId: number) => {
+  const handleDelete = async (adminId: string) => {
     if (!confirm('Are you sure you want to delete this admin?')) return;
 
     try {

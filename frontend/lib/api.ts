@@ -913,7 +913,7 @@ export const adminApi = {
     return response.data;
   },
 
-  deleteAdmin: async (adminId: string): Promise<void> => {
+  deleteAdmin: async (adminId: string | number): Promise<void> => {
     await api.delete(`/api/v1/users/${adminId}`);
   },
 

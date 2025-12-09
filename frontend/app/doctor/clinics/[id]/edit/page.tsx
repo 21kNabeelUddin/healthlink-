@@ -66,8 +66,6 @@ export default function EditClinicPage() {
     try {
       await facilitiesApi.update(clinicId, {
         ...data,
-        facilityType: 'CLINIC',
-        province: data.state,
       });
 
       toast.success('Clinic updated successfully!');

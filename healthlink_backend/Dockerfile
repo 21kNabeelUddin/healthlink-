@@ -4,8 +4,8 @@
 FROM gradle:8.10.2-jdk21 AS builder
 WORKDIR /app
 COPY . .
-# Skip tests for faster deploy; remove -x test if you want tests in CI
-RUN ./gradlew clean bootJar -x test
+# Ensure Gradle wrapper is executable; skip tests for faster deploy (remove -x test if desired)
+RUN chmod +x gradlew && ./gradlew clean bootJar -x test
 
 # Runtime stage
 FROM eclipse-temurin:21-jre

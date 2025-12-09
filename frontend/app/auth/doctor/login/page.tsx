@@ -28,7 +28,6 @@ export default function DoctorLogin() {
       const response = await authApi.login({
         email: data.email,
         password: data.password,
-        role: 'DOCTOR',
       });
 
       if (response.accessToken && response.user) {

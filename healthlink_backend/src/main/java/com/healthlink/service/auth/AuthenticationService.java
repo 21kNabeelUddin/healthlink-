@@ -4,6 +4,7 @@ import com.healthlink.domain.user.entity.*;
 import com.healthlink.domain.user.enums.ApprovalStatus;
 import com.healthlink.domain.user.enums.UserRole;
 import com.healthlink.domain.user.repository.UserRepository;
+import com.healthlink.domain.user.repository.DoctorRepository;
 import com.healthlink.dto.auth.*;
 import com.healthlink.infrastructure.logging.SafeLogger;
 import com.healthlink.security.jwt.JwtService;
@@ -32,6 +33,7 @@ import org.springframework.web.server.ResponseStatusException;
 public class AuthenticationService {
 
     private final UserRepository userRepository;
+    private final DoctorRepository doctorRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final OtpService otpService;
@@ -52,6 +54,15 @@ public class AuthenticationService {
                     org.springframework.http.HttpStatus.CONFLICT, "Email already registered");
         }
 
+        // For doctors, check if PMDC ID already exists
+        if (request.getRole() == UserRole.DOCTOR && request.getPmdcId() != null && !request.getPmdcId().trim().isEmpty()) {
+            if (doctorRepository.existsByPmdcId(request.getPmdcId().trim())) {
+                throw new org.springframework.web.server.ResponseStatusException(
+                        org.springframework.http.HttpStatus.CONFLICT, 
+                        "A doctor with PMDC ID " + request.getPmdcId() + " already exists. Please use a different PMDC ID.");
+            }
+        }
+
         // Validate password strength
         if (request.getPassword() != null && !isValidPassword(request.getPassword())) {
             throw new org.springframework.web.server.ResponseStatusException(
@@ -62,8 +73,21 @@ public class AuthenticationService {
         // Create user based on role
         User user = createUserByRole(request);
 
-        // Save user
-        user = userRepository.save(user);
+        // Save user - wrap in try-catch to ensure OTP is only sent on success
+        try {
+            user = userRepository.save(user);
+            // Flush to ensure all constraints are checked before sending OTP
+            userRepository.flush();
+        } catch (org.springframework.dao.DataIntegrityViolationException e) {
+            // Handle constraint violations (like duplicate PMDC ID that wasn't caught earlier)
+            if (e.getMessage() != null && e.getMessage().contains("pmdc_id")) {
+                throw new org.springframework.web.server.ResponseStatusException(
+                        org.springframework.http.HttpStatus.CONFLICT,
+                        "A doctor with this PMDC ID already exists. Please use a different PMDC ID.");
+            }
+            throw e;
+        }
+        
         SafeLogger.get(AuthenticationService.class)
             .event("user_registered")
             .withMasked("email", user.getEmail())
@@ -72,6 +96,7 @@ public class AuthenticationService {
 
         // For Patients and Doctors, send OTP for email verification
         // (Patients: self-serve access, Doctors: require email verification + admin approval)
+        // Only send OTP after successful save
         if (user.getRole() == UserRole.PATIENT || user.getRole() == UserRole.DOCTOR) {
             otpService.generateOtp(user.getEmail());
         }

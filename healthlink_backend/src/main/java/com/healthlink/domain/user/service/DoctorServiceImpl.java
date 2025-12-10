@@ -17,9 +17,12 @@ import com.healthlink.domain.user.repository.DoctorRepository;
 import com.healthlink.domain.user.repository.UserRepository;
 import com.healthlink.service.notification.EmailService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.security.SecureRandom;
@@ -28,6 +31,7 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
+@Slf4j
 public class DoctorServiceImpl implements DoctorService {
 
         private final DoctorRepository doctorRepository;
@@ -39,6 +43,10 @@ public class DoctorServiceImpl implements DoctorService {
         private final EmailService emailService;
         
         private static final SecureRandom RANDOM = new SecureRandom();
+        
+        // Temporary storage for passwords (in-memory, cleared after email is sent)
+        // Key: email, Value: temporary password
+        private final java.util.Map<String, String> temporaryPasswords = new java.util.concurrent.ConcurrentHashMap<>();
 
         @Override
         public DoctorDashboardDTO getDashboard(UUID doctorId) {
@@ -77,14 +85,14 @@ public class DoctorServiceImpl implements DoctorService {
         public EmergencyPatientResponse createEmergencyPatient(UUID doctorId, CreateEmergencyPatientRequest request) {
                 // Verify doctor exists
                 doctorRepository.findById(doctorId)
-                                .orElseThrow(() -> new RuntimeException("Doctor not found"));
+                                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Doctor not found"));
                 
                 // Use patient's real email from request
                 String email = request.getEmail().trim().toLowerCase();
                 
                 // Check if email already exists
                 if (userRepository.existsByEmail(email)) {
-                        throw new RuntimeException("An account with this email already exists");
+                        throw new ResponseStatusException(HttpStatus.CONFLICT, "An account with this email already exists");
                 }
                 
                 // Generate temporary password (not returned to frontend, patient will reset it)
@@ -116,8 +124,16 @@ public class DoctorServiceImpl implements DoctorService {
                 
                 Patient savedPatient = userRepository.save(patient);
                 
-                // Send welcome email with password reset instructions
-                emailService.sendEmergencyPatientWelcomeEmail(email, patientName);
+                // Send welcome email with temporary password (async, non-blocking)
+                // Patient creation succeeds even if email fails
+                // Only send email if this is a standalone patient creation (not part of patient+appointment)
+                try {
+                    emailService.sendEmergencyPatientWelcomeEmail(email, patientName, temporaryPassword);
+                } catch (Exception e) {
+                    // Log error but don't fail patient creation
+                    // Email failure is logged in EmailService, patient is still created
+                    log.warn("Failed to send welcome email to emergency patient {}: {}", email, e.getMessage());
+                }
                 
                 return EmergencyPatientResponse.builder()
                                 .patientId(savedPatient.getId())
@@ -131,13 +147,14 @@ public class DoctorServiceImpl implements DoctorService {
         @Transactional
         public EmergencyPatientAndAppointmentResponse createEmergencyPatientAndAppointment(
                         UUID doctorId, CreateEmergencyPatientAndAppointmentRequest request) {
-                // Create emergency patient first
+                // Create emergency patient first (without sending email yet)
                 CreateEmergencyPatientRequest patientRequest = new CreateEmergencyPatientRequest();
                 patientRequest.setPatientName(request.getPatientName());
                 patientRequest.setEmail(request.getEmail()); // Pass email from request
                 patientRequest.setPhoneNumber(request.getPhoneNumber());
                 
-                EmergencyPatientResponse patientResponse = createEmergencyPatient(doctorId, patientRequest);
+                // Create patient without sending email (we'll send it after appointment is created)
+                EmergencyPatientResponse patientResponse = createEmergencyPatientWithoutEmail(doctorId, patientRequest);
                 
                 // Mark appointment as emergency
                 request.getAppointmentRequest().setIsEmergency(true);
@@ -147,10 +164,90 @@ public class DoctorServiceImpl implements DoctorService {
                                 request.getAppointmentRequest(), 
                                 patientResponse.getEmail());
                 
+                // Only send email after both patient and appointment are created successfully
+                try {
+                    String temporaryPassword = getTemporaryPasswordForPatient(patientResponse.getEmail());
+                    if (temporaryPassword != null) {
+                        emailService.sendEmergencyPatientWelcomeEmail(
+                                patientResponse.getEmail(), 
+                                patientResponse.getPatientName(), 
+                                temporaryPassword);
+                    } else {
+                        log.error("Temporary password not found for emergency patient: {}", patientResponse.getEmail());
+                        // Password was not stored - this shouldn't happen, but don't fail the operation
+                    }
+                } catch (Exception e) {
+                    log.warn("Failed to send welcome email to emergency patient {}: {}", patientResponse.getEmail(), e.getMessage());
+                    // Don't fail - patient and appointment are already created
+                }
+                
                 return EmergencyPatientAndAppointmentResponse.builder()
                                 .patient(patientResponse)
                                 .appointment(appointmentResponse)
                                 .build();
+        }
+        
+        /**
+         * Create emergency patient without sending email (used when creating patient + appointment)
+         */
+        private EmergencyPatientResponse createEmergencyPatientWithoutEmail(UUID doctorId, CreateEmergencyPatientRequest request) {
+                // Verify doctor exists
+                doctorRepository.findById(doctorId)
+                                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Doctor not found"));
+                
+                // Use patient's real email from request
+                String email = request.getEmail().trim().toLowerCase();
+                
+                // Check if email already exists
+                if (userRepository.existsByEmail(email)) {
+                        throw new ResponseStatusException(HttpStatus.CONFLICT, "An account with this email already exists");
+                }
+                
+                // Generate temporary password (not returned to frontend, patient will reset it)
+                String temporaryPassword = generateTemporaryPassword();
+                
+                // Store password temporarily for later email sending (after appointment is created)
+                temporaryPasswords.put(email, temporaryPassword);
+                
+                // Set patient name - split if possible, otherwise use full name
+                String patientName = request.getPatientName().trim();
+                String[] nameParts = patientName.split("\\s+", 2);
+                
+                // Create patient
+                Patient patient = new Patient();
+                patient.setEmail(email);
+                patient.setPasswordHash(passwordEncoder.encode(temporaryPassword));
+                
+                if (nameParts.length >= 2) {
+                        patient.setFirstName(nameParts[0]);
+                        patient.setLastName(nameParts[1]);
+                } else {
+                        patient.setFirstName(patientName);
+                        patient.setLastName("");
+                }
+                
+                patient.setPhoneNumber(request.getPhoneNumber());
+                patient.setRole(UserRole.PATIENT);
+                patient.setApprovalStatus(ApprovalStatus.APPROVED); // Auto-approved
+                patient.setIsEmailVerified(true); // Auto-verified
+                patient.setIsActive(true);
+                patient.setPreferredLanguage("en");
+                
+                Patient savedPatient = userRepository.save(patient);
+                
+                return EmergencyPatientResponse.builder()
+                                .patientId(savedPatient.getId())
+                                .email(email)
+                                .patientName(patientName)
+                                .phoneNumber(request.getPhoneNumber())
+                                .build();
+        }
+        
+        /**
+         * Retrieve and remove temporary password for a patient (used after successful creation)
+         */
+        private String getTemporaryPasswordForPatient(String email) {
+                return temporaryPasswords.remove(email); // Remove after retrieving
         }
         
         private String generateTemporaryPassword() {

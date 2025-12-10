@@ -77,29 +77,33 @@ public class AppointmentService {
         LocalDateTime startTime = request.getAppointmentTime();
         LocalDateTime endTime = startTime.plusMinutes(duration);
 
-        // Validate within facility hours and slot alignment
-        LocalTime opening = parseTimeOrDefault(facility.getOpeningTime(), LocalTime.of(9, 0));
-        LocalTime closing = parseTimeOrDefault(facility.getClosingTime(), LocalTime.of(17, 0));
-        if (!closing.isAfter(opening)) {
-            throw new RuntimeException("Clinic closing time must be after opening time");
-        }
-        LocalDate appointmentDate = startTime.toLocalDate();
-        LocalDateTime windowStart = appointmentDate.atTime(opening);
-        LocalDateTime windowEnd = appointmentDate.atTime(closing);
-        if (startTime.isBefore(windowStart) || endTime.isAfter(windowEnd)) {
-            throw new RuntimeException("Appointment time must be within clinic working hours");
-        }
+        // Check if this is an emergency appointment first
+        Boolean isEmergency = request.getIsEmergency() != null && request.getIsEmergency();
+        
+        // Validate within facility hours and slot alignment (skip for emergency appointments)
+        if (!isEmergency) {
+            LocalTime opening = parseTimeOrDefault(facility.getOpeningTime(), LocalTime.of(9, 0));
+            LocalTime closing = parseTimeOrDefault(facility.getClosingTime(), LocalTime.of(17, 0));
+            if (!closing.isAfter(opening)) {
+                throw new RuntimeException("Clinic closing time must be after opening time");
+            }
+            LocalDate appointmentDate = startTime.toLocalDate();
+            LocalDateTime windowStart = appointmentDate.atTime(opening);
+            LocalDateTime windowEnd = appointmentDate.atTime(closing);
+            if (startTime.isBefore(windowStart) || endTime.isAfter(windowEnd)) {
+                throw new RuntimeException("Appointment time must be within clinic working hours");
+            }
 
-        int slotMinutes = (doctor.getSlotDurationMinutes() != null && doctor.getSlotDurationMinutes() > 0)
-                ? doctor.getSlotDurationMinutes()
-                : 15;
-        long minutesFromOpen = Duration.between(windowStart, startTime).toMinutes();
-        if (minutesFromOpen % slotMinutes != 0) {
-            throw new RuntimeException("Please select a valid time slot");
+            int slotMinutes = (doctor.getSlotDurationMinutes() != null && doctor.getSlotDurationMinutes() > 0)
+                    ? doctor.getSlotDurationMinutes()
+                    : 15;
+            long minutesFromOpen = Duration.between(windowStart, startTime).toMinutes();
+            if (minutesFromOpen % slotMinutes != 0) {
+                throw new RuntimeException("Please select a valid time slot");
+            }
         }
         
         // Validate appointment time for emergency appointments
-        Boolean isEmergency = request.getIsEmergency() != null && request.getIsEmergency();
         if (isEmergency) {
             LocalDateTime now = LocalDateTime.now();
             LocalDateTime fiveMinutesFromNow = now.plusMinutes(5);

@@ -258,20 +258,23 @@ public class EmailService {
     }
 
     /**
-     * Send welcome email to emergency patient with password reset instructions
+     * Send welcome email to emergency patient with temporary password
+     * This method is async and non-blocking - patient creation succeeds even if email fails
      */
     @Async
-    public void sendEmergencyPatientWelcomeEmail(String toEmail, String patientName) {
+    public void sendEmergencyPatientWelcomeEmail(String toEmail, String patientName, String temporaryPassword) {
         try {
             Context context = new Context();
             context.setVariable("patientName", patientName);
+            context.setVariable("email", toEmail);
+            context.setVariable("temporaryPassword", temporaryPassword);
             context.setVariable("loginUrl", "http://localhost:3000/auth/patient/login"); // TODO: Make this configurable
 
             String htmlContent = templateEngine.process("email/emergency-patient-welcome", context);
 
             sendHtmlEmail(
                     toEmail,
-                    "Welcome to HealthLink - Account Created",
+                    "Welcome to HealthLink - Your Account Credentials",
                     htmlContent);
 
             SafeLogger.get(EmailService.class)
@@ -279,14 +282,19 @@ public class EmailService {
                 .with("template", "emergency-patient-welcome")
                 .withMasked("email", toEmail)
                 .log();
+            log.info("✅ Emergency patient welcome email sent successfully to: {}", toEmail);
         } catch (Exception e) {
             SafeLogger.get(EmailService.class)
                 .event("email_send_failed")
                 .with("template", "emergency-patient-welcome")
                 .withMasked("email", toEmail)
                 .with("error", e.getClass().getSimpleName())
+                .with("error_message", e.getMessage())
                 .log();
+            log.error("❌ Failed to send emergency patient welcome email to: {} - Error: {}", toEmail, e.getMessage(), e);
+            log.warn("⚠️ Patient account was created successfully, but email delivery failed. Check email configuration.");
             // Don't throw - email failure shouldn't break patient creation
+            // The exception is caught and logged, patient creation continues
         }
     }
 
@@ -383,10 +391,9 @@ public class EmailService {
     }
 
     /**
-     * Send simple text email
+     * Send simple text email synchronously (for critical operations like registration OTP)
      */
-    @Async
-    public void sendSimpleEmail(String toEmail, String subject, String body) {
+    public void sendSimpleEmailSync(String toEmail, String subject, String body) {
         log.info("📧 Attempting to send email to: {} with subject: {}", toEmail, subject);
         log.info("📧 Email from: {}", fromEmail);
         
@@ -424,6 +431,14 @@ public class EmailService {
             // Re-throw so caller knows it failed
             throw new RuntimeException("Failed to send email: " + e.getMessage(), e);
         }
+    }
+
+    /**
+     * Send simple text email asynchronously (for non-critical operations)
+     */
+    @Async
+    public void sendSimpleEmail(String toEmail, String subject, String body) {
+        sendSimpleEmailSync(toEmail, subject, body);
     }
 
     /**

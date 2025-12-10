@@ -65,6 +65,7 @@ spring:
 
   # Mail Configuration
   # Set MAIL_HOST in .env file (e.g., smtp.gmail.com for Gmail, or localhost for local testing)
+  # For production/cloud platforms, consider using SendGrid, Mailgun, or AWS SES instead of Gmail SMTP
   mail:
     host: ${MAIL_HOST:localhost}
     port: ${MAIL_PORT:1025}
@@ -77,6 +78,13 @@ spring:
           starttls:
             enable: ${MAIL_SMTP_STARTTLS_ENABLE:false}
             required: ${MAIL_SMTP_STARTTLS_REQUIRED:false}
+          connectiontimeout: 10000  # 10 seconds
+          timeout: 10000  # 10 seconds
+          writetimeout: 10000  # 10 seconds
+          # For Gmail, you may need to use port 465 with SSL instead of 587 with STARTTLS
+          # ssl:
+          #   enable: ${MAIL_SMTP_SSL_ENABLE:false}
+          #   trust: ${MAIL_SMTP_SSL_TRUST:*}
 
   # RabbitMQ Configuration
   # Set RABBITMQ_HOST in .env file (e.g., localhost for local, or your RabbitMQ service URL)

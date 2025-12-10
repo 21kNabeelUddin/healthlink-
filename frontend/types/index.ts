@@ -226,6 +226,7 @@ export interface ZoomMeeting {
 // Emergency Patient Types
 export interface CreateEmergencyPatientRequest {
   patientName: string;
+  email: string;
   phoneNumber?: string;
 }
 
@@ -238,6 +239,7 @@ export interface EmergencyPatientResponse {
 
 export interface CreateEmergencyPatientAndAppointmentRequest {
   patientName: string;
+  email: string;
   phoneNumber?: string;
   appointmentRequest: {
     doctorId: string;

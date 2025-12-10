@@ -67,15 +67,30 @@
 
       <h1>Welcome to HealthLink, <span th:text="${patientName}">Patient</span>!</h1>
 
-      <p>Your account has been created successfully. To access your account and view your medical information, you'll need to set up a password.</p>
+      <p>Your account has been created successfully. Your doctor has set up an account for you to access your medical information and prescriptions.</p>
+
+      <div class="info-box" style="background: #fef3c7; border-left-color: #f59e0b;">
+        <strong style="color: #92400e;">⚠️ IMPORTANT - Change Your Password Immediately</strong>
+        <p style="margin: 10px 0; color: #78350f;">
+          For your security, please change this temporary password as soon as possible after logging in.
+        </p>
+      </div>
+
+      <div class="info-box" style="background: #eff6ff; border-left-color: #3b82f6;">
+        <strong>Your Login Credentials:</strong>
+        <p style="margin: 10px 0;">
+          <strong>Email:</strong> <span th:text="${email}">your-email@example.com</span><br/>
+          <strong>Temporary Password:</strong> <code style="background: #ffffff; padding: 4px 8px; border-radius: 4px; font-size: 16px; font-weight: bold; color: #1e40af;" th:text="${temporaryPassword}">TEMP_PASSWORD</code>
+        </p>
+      </div>
 
       <div class="info-box">
         <strong>Next Steps:</strong>
         <ol style="margin: 10px 0; padding-left: 20px;">
-          <li>Go to the login page</li>
-          <li>Click on "Forgot Password"</li>
-          <li>Enter your email address</li>
-          <li>Follow the instructions to reset your password</li>
+          <li>Click the button below to go to the login page</li>
+          <li>Log in using your email and the temporary password above</li>
+          <li><strong>Immediately change your password</strong> after logging in (you'll be prompted)</li>
+          <li>View your prescriptions and medical records</li>
         </ol>
       </div>
 

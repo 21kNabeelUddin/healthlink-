@@ -344,7 +344,9 @@ public class OtpService {
         log.info("Attempting to send OTP email to: {}", email);
         
         try {
-            emailService.sendSimpleEmail(
+            // Send email synchronously for registration to ensure it only happens after successful save
+            // For other cases, async is fine, but for registration we want to ensure transaction success
+            emailService.sendSimpleEmailSync(
                     email,
                     "Your HealthLink verification code",
                     "Your one-time verification code is: " + otp + "\n\n" +
@@ -356,13 +358,19 @@ public class OtpService {
                     .log();
             log.info("OTP email sent successfully to: {}", email);
         } catch (Exception ex) {
+            // Log OTP in logs so it can be retrieved if email fails (common in cloud platforms)
             SafeLogger.get(OtpService.class)
                     .event("otp_email_send_failed")
                     .withMasked("email", email)
+                    .with("otp", otp)  // Log OTP so it can be retrieved from logs if email fails
                     .with("error", ex.getMessage())
                     .with("error_class", ex.getClass().getName())
                     .log();
-            log.error("Failed to send OTP email to: {} - Error: {}", email, ex.getMessage(), ex);
+            log.error("❌ Failed to send OTP email to: {} - Error: {}", email, ex.getMessage(), ex);
+            log.error("⚠️ OTP for {} is: {} (check logs if email delivery failed)", email, otp);
+            log.error("⚠️ This is common on cloud platforms (Railway, Render, etc.) that block SMTP connections.");
+            log.error("⚠️ Consider using SendGrid, Mailgun, or AWS SES instead of Gmail SMTP for production.");
+            // Don't throw - email failure shouldn't break registration, but log OTP so it can be retrieved
         }
     }
 }

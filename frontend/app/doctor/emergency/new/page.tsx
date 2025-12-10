@@ -20,6 +20,8 @@ interface EmergencyPatientForm {
   facilityId?: string;
   appointmentTime?: string;
   reasonForVisit?: string;
+  prescriptionDetails?: string;
+  medications?: string; // Comma-separated or newline-separated
 }
 
 export default function NewEmergencyPatientPage() {
@@ -30,6 +32,7 @@ export default function NewEmergencyPatientPage() {
   const [createdPatient, setCreatedPatient] = useState<{
     email: string;
     patientName: string;
+    patientId: string;
   } | null>(null);
   const { register, handleSubmit, watch, formState: { errors } } = useForm<EmergencyPatientForm>({
     defaultValues: {
@@ -64,6 +67,7 @@ export default function NewEmergencyPatientPage() {
         // Create patient + appointment in one call
         const request: CreateEmergencyPatientAndAppointmentRequest = {
           patientName: data.patientName,
+          email: data.email,
           phoneNumber: data.phoneNumber || undefined,
           appointmentRequest: {
             doctorId: user.id.toString(),
@@ -78,12 +82,14 @@ export default function NewEmergencyPatientPage() {
         setCreatedPatient({
           email: response.patient.email,
           patientName: response.patient.patientName,
+          patientId: response.patient.patientId,
         });
-        toast.success('Emergency patient and appointment created successfully!');
+        toast.success('Emergency patient and appointment created successfully! Email sent with login credentials.');
       } else {
         // Create patient only
         const request: CreateEmergencyPatientRequest = {
           patientName: data.patientName,
+          email: data.email,
           phoneNumber: data.phoneNumber || undefined,
         };
 
@@ -91,8 +97,9 @@ export default function NewEmergencyPatientPage() {
         setCreatedPatient({
           email: response.email,
           patientName: response.patientName,
+          patientId: response.patientId,
         });
-        toast.success('Emergency patient created successfully!');
+        toast.success('Emergency patient created successfully! Email sent with login credentials.');
       }
     } catch (error: any) {
       if (error.response?.status === 401) {
@@ -141,16 +148,22 @@ export default function NewEmergencyPatientPage() {
 
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <p className="text-sm text-blue-800">
-                    <strong>Note:</strong> The patient should check their email for instructions on how to reset their password and log in to their account.
+                    <strong>Note:</strong> The patient has been sent an email with their temporary password. They should log in and change it immediately.
                   </p>
                 </div>
               </div>
 
               <div className="flex gap-3 pt-4 border-t">
+                <Button 
+                  onClick={() => router.push(`/doctor/emergency/${createdPatient.patientId}/prescription`)} 
+                  variant="primary"
+                >
+                  Add Prescription
+                </Button>
                 <Button onClick={handleCreateAnother} variant="outline">
                   Create Another Patient
                 </Button>
-                <Button onClick={() => router.push('/doctor/appointments')} variant="primary">
+                <Button onClick={() => router.push('/doctor/appointments')} variant="outline">
                   View Appointments
                 </Button>
                 <Button onClick={() => router.push('/doctor/dashboard')} variant="outline">
@@ -202,6 +215,37 @@ export default function NewEmergencyPatientPage() {
                 error={errors.phoneNumber?.message}
                 placeholder="+923001234567 (optional)"
               />
+
+              <div className="pt-4 border-t border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-800 mb-3">Prescription (Optional - Can add during meeting)</h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  You can add prescription details now or during/after the meeting. If you add them now, they'll be saved immediately.
+                </p>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Prescription Details
+                  </label>
+                  <textarea
+                    {...register('prescriptionDetails')}
+                    rows={4}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    placeholder="Enter prescription details, instructions, diagnosis notes, etc."
+                  />
+                </div>
+
+                <div className="mt-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Medications (one per line or comma-separated)
+                  </label>
+                  <textarea
+                    {...register('medications')}
+                    rows={3}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    placeholder="e.g., Paracetamol 500mg, Amoxicillin 250mg"
+                  />
+                </div>
+              </div>
 
               <div className="flex items-center gap-2 pt-2">
                 <input

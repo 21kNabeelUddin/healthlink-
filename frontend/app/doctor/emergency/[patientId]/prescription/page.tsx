@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useForm } from 'react-hook-form';
@@ -17,7 +17,7 @@ interface PrescriptionFormData {
   body: string;
 }
 
-export default function EmergencyPrescriptionPage() {
+function EmergencyPrescriptionPageContent() {
   const router = useRouter();
   const params = useParams();
   const { user } = useAuth();
@@ -133,7 +133,7 @@ export default function EmergencyPrescriptionPage() {
       });
 
       toast.success('Prescription created successfully!');
-      router.push('/doctor/emergency');
+      router.push('/doctor/prescriptions');
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to create prescription');
     } finally {
@@ -290,6 +290,25 @@ export default function EmergencyPrescriptionPage() {
         </Card>
       </div>
     </DashboardLayout>
+  );
+}
+
+export default function EmergencyPrescriptionPage() {
+  return (
+    <Suspense fallback={
+      <DashboardLayout requiredUserType="DOCTOR">
+        <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="text-center py-20">
+              <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-teal-500 border-t-transparent"></div>
+              <p className="mt-4 text-slate-600">Loading...</p>
+            </div>
+          </div>
+        </div>
+      </DashboardLayout>
+    }>
+      <EmergencyPrescriptionPageContent />
+    </Suspense>
   );
 }
 

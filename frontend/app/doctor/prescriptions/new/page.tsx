@@ -19,14 +19,24 @@ interface PrescriptionFormData {
   body: string;
 }
 
+interface PatientOption {
+  id: string;
+  name: string;
+  email?: string;
+  lastAppointmentDate: string;
+}
+
 function NewPrescriptionPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user } = useAuth();
   const appointmentId = searchParams.get('appointmentId');
-  const patientId = searchParams.get('patientId');
+  const patientIdFromQuery = searchParams.get('patientId');
   
   const [appointment, setAppointment] = useState<Appointment | null>(null);
+  const [selectedPatientId, setSelectedPatientId] = useState<string>(patientIdFromQuery || '');
+  const [patients, setPatients] = useState<PatientOption[]>([]);
+  const [isLoadingPatients, setIsLoadingPatients] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingAppointment, setIsLoadingAppointment] = useState(!!appointmentId);
   const [medications, setMedications] = useState<{ name: string; dosage: string }[]>([
@@ -45,8 +55,65 @@ function NewPrescriptionPageContent() {
   useEffect(() => {
     if (appointmentId) {
       loadAppointment();
+    } else if (!patientIdFromQuery && user?.id) {
+      // Load patients list if no appointmentId or patientId provided
+      loadPatients();
     }
-  }, [appointmentId]);
+  }, [appointmentId, patientIdFromQuery, user?.id]);
+
+  const loadPatients = async () => {
+    if (!user?.id) return;
+    setIsLoadingPatients(true);
+    try {
+      // Fetch all appointments for this doctor
+      const appointments = await appointmentsApi.list();
+      
+      // Extract unique patients with their most recent appointment date
+      const patientMap = new Map<string, { name: string; email?: string; lastAppointmentDate: string }>();
+      
+      appointments.forEach((apt: Appointment) => {
+        if (apt.patientId && apt.patientName) {
+          const existing = patientMap.get(apt.patientId);
+          const aptDate = new Date(apt.appointmentDateTime).getTime();
+          
+          if (!existing || aptDate > new Date(existing.lastAppointmentDate).getTime()) {
+            patientMap.set(apt.patientId, {
+              name: apt.patientName,
+              email: apt.patientEmail,
+              lastAppointmentDate: apt.appointmentDateTime,
+            });
+          }
+        }
+      });
+      
+      // Convert to array and sort by most recent appointment date (descending)
+      const patientsList: PatientOption[] = Array.from(patientMap.entries())
+        .map(([id, data]) => ({
+          id,
+          name: data.name,
+          email: data.email,
+          lastAppointmentDate: data.lastAppointmentDate,
+        }))
+        .sort((a, b) => {
+          // Sort by most recent appointment first (descending)
+          return new Date(b.lastAppointmentDate).getTime() - new Date(a.lastAppointmentDate).getTime();
+        });
+      
+      setPatients(patientsList);
+      
+      // Auto-select first patient if none selected
+      if (patientsList.length > 0 && !selectedPatientId) {
+        setSelectedPatientId(patientsList[0].id);
+        const selectedPatient = patientsList[0];
+        setValue('title', `Prescription for ${selectedPatient.name} - ${new Date().toLocaleDateString()}`);
+      }
+    } catch (error: any) {
+      console.error('Failed to load patients:', error);
+      toast.error('Failed to load patients list');
+    } finally {
+      setIsLoadingPatients(false);
+    }
+  };
 
   const loadAppointment = async () => {
     if (!appointmentId) return;
@@ -124,8 +191,11 @@ function NewPrescriptionPageContent() {
   const onSubmit = async (data: PrescriptionFormData) => {
     if (!user?.id) return;
 
-    if (!appointmentId && !patientId) {
-      toast.error('Appointment ID or Patient ID is required');
+    // Determine patient ID: from query param, selected patient, or appointment
+    const finalPatientId = patientIdFromQuery || selectedPatientId || (appointment?.patientId ? appointment.patientId.toString() : '');
+    
+    if (!appointmentId && !finalPatientId) {
+      toast.error('Please select a patient');
       return;
     }
 
@@ -174,7 +244,6 @@ function NewPrescriptionPageContent() {
       }
 
       // Add patientId (required, backend expects UUID)
-      const finalPatientId = patientId || (appointment?.patientId ? appointment.patientId.toString() : '');
       if (finalPatientId) {
         prescriptionData.patientId = finalPatientId;
       } else {
@@ -262,6 +331,52 @@ function NewPrescriptionPageContent() {
 
           <Card className="shadow-lg">
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+              {/* Patient Selection - Only show if no appointmentId */}
+              {!appointmentId && (
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Select Patient * <User className="inline w-4 h-4 ml-1" />
+                  </label>
+                  {isLoadingPatients ? (
+                    <div className="px-4 py-3 border border-slate-300 rounded-lg bg-slate-50">
+                      <p className="text-sm text-slate-500">Loading patients...</p>
+                    </div>
+                  ) : patients.length === 0 ? (
+                    <div className="px-4 py-3 border border-slate-300 rounded-lg bg-amber-50">
+                      <p className="text-sm text-amber-700">No patients found. You need to have appointments with patients first.</p>
+                    </div>
+                  ) : (
+                    <select
+                      value={selectedPatientId}
+                      onChange={(e) => {
+                        const patientId = e.target.value;
+                        setSelectedPatientId(patientId);
+                        const selectedPatient = patients.find(p => p.id === patientId);
+                        if (selectedPatient) {
+                          setValue('title', `Prescription for ${selectedPatient.name} - ${new Date().toLocaleDateString()}`);
+                        }
+                      }}
+                      className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-white text-slate-900"
+                      required
+                    >
+                      <option value="">-- Select a patient --</option>
+                      {patients.map((patient) => {
+                        const lastApptDate = new Date(patient.lastAppointmentDate);
+                        const formattedDate = lastApptDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                        return (
+                          <option key={patient.id} value={patient.id}>
+                            {patient.name} • Last visit: {formattedDate}
+                          </option>
+                        );
+                      })}
+                    </select>
+                  )}
+                  {!selectedPatientId && !isLoadingPatients && patients.length > 0 && (
+                    <p className="mt-1 text-sm text-red-600">Please select a patient</p>
+                  )}
+                </div>
+              )}
+
               {/* Title */}
               <Input
                 label="Prescription Title *"

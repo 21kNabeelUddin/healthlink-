@@ -70,6 +70,22 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.CONFLICT, "Illegal State", ex.getMessage(), null);
     }
 
+    @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> handleDataIntegrityViolation(org.springframework.dao.DataIntegrityViolationException ex) {
+        log.error("Data integrity violation", ex);
+        String message = "Database constraint violation";
+        if (ex.getMessage() != null) {
+            if (ex.getMessage().contains("appointment_id") || ex.getMessage().contains("appointmentId")) {
+                message = "Appointment ID constraint violation. For emergency prescriptions, appointment ID is optional.";
+            } else if (ex.getMessage().contains("NOT NULL") || ex.getMessage().contains("null value")) {
+                message = "Required field is missing";
+            } else if (ex.getMessage().contains("duplicate") || ex.getMessage().contains("unique")) {
+                message = "Duplicate entry detected";
+            }
+        }
+        return build(HttpStatus.BAD_REQUEST, "Data Integrity Violation", message, null);
+    }
+
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<ErrorResponse> handleRuntime(RuntimeException ex) {
         log.error("Runtime exception", ex);

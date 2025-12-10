@@ -26,8 +26,8 @@ public class Prescription extends BaseEntity {
     @Column(name = "patient_id", nullable = false)
     private UUID patientId;
 
-    @Column(name = "appointment_id", nullable = false)
-    private UUID appointmentId;
+    @Column(name = "appointment_id", nullable = true)
+    private UUID appointmentId; // Nullable for emergency prescriptions without appointments
 
     @Column(name = "doctor_id")
     private UUID doctorId;

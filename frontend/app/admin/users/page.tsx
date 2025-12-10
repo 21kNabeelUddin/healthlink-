@@ -668,7 +668,7 @@ export default function AdminUsersPage() {
           </Tabs>
         </div>
       </div>
-    </div>
+    </DashboardLayout>
   );
 }
 
@@ -1075,9 +1075,7 @@ function UserDetailView({ user }: { user: User }) {
           </Card>
         </TabsContent>
       </Tabs>
-        </div>
-      </div>
-    </DashboardLayout>
+    </div>
   );
 }
 

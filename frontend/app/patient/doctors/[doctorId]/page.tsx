@@ -99,7 +99,7 @@ export default function DoctorProfilePage() {
     }
   };
 
-  const handleBookAppointment = (clinicId: number) => {
+  const handleBookAppointment = (clinicId: string) => {
     router.push(`/patient/doctors/${doctorId}/book?clinicId=${clinicId}`);
   };
 

@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
-const MODEL_NAME = process.env.GROQ_MODEL_NAME || 'llama-3.1-8b-instant';
+// Trim any whitespace or trailing dashes from model name
+const MODEL_NAME = (process.env.GROQ_MODEL_NAME || 'llama-3.1-8b-instant').trim().replace(/-+$/, '');
 const BACKEND_API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
 type ConversationState = 'INITIAL' | 'ACTIVE' | 'RESOLVING' | 'CLOSING' | 'ENDED';

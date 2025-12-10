@@ -691,42 +691,40 @@ export default function EnhancedAppointmentsPage() {
             </Card>
           )}
         </div>
-      </div>
-      </div>
 
-      {rescheduleModal.open && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
-            <h3 className="text-lg font-semibold mb-4">Reschedule Appointment</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">New Date</label>
-                <input
-                  type="date"
-                  value={rescheduleModal.date}
-                  onChange={(e) => setRescheduleModal((prev) => ({ ...prev, date: e.target.value }))}
-                  className="w-full border rounded-md px-3 py-2"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">New Time</label>
-                <input
-                  type="time"
-                  value={rescheduleModal.time}
-                  onChange={(e) => setRescheduleModal((prev) => ({ ...prev, time: e.target.value }))}
-                  className="w-full border rounded-md px-3 py-2"
-                />
-              </div>
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setRescheduleModal((prev) => ({ ...prev, open: false }))}>
-                  Cancel
-                </Button>
-                <Button onClick={handleRescheduleSubmit}>Confirm</Button>
+        {rescheduleModal.open && (
+          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
+              <h3 className="text-lg font-semibold mb-4">Reschedule Appointment</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">New Date</label>
+                  <input
+                    type="date"
+                    value={rescheduleModal.date}
+                    onChange={(e) => setRescheduleModal((prev) => ({ ...prev, date: e.target.value }))}
+                    className="w-full border rounded-md px-3 py-2"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">New Time</label>
+                  <input
+                    type="time"
+                    value={rescheduleModal.time}
+                    onChange={(e) => setRescheduleModal((prev) => ({ ...prev, time: e.target.value }))}
+                    className="w-full border rounded-md px-3 py-2"
+                  />
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button variant="outline" onClick={() => setRescheduleModal((prev) => ({ ...prev, open: false }))}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleRescheduleSubmit}>Confirm</Button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
       </div>
     </DashboardLayout>
   );

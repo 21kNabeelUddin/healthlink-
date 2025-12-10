@@ -50,13 +50,13 @@ export function ConsentDialog({ open, onClose, onConsent }: ConsentDialogProps) 
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md bg-white border-slate-200 shadow-xl">
         <DialogHeader>
           <div className="flex items-center gap-2 mb-2">
             <Lock className="w-5 h-5 text-teal-600" />
-            <DialogTitle>Privacy & Data Access</DialogTitle>
+            <DialogTitle className="text-slate-900">Privacy & Data Access</DialogTitle>
           </div>
-          <DialogDescription>
+          <DialogDescription className="text-slate-600">
             To provide personalized assistance, I can access your medical information. This is completely optional.
           </DialogDescription>
         </DialogHeader>

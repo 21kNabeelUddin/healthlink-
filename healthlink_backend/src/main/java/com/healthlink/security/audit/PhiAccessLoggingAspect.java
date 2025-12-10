@@ -3,7 +3,6 @@ package com.healthlink.security.audit;
 import com.healthlink.infrastructure.security.AuditEnrichmentFilter;
 import com.healthlink.logging.PhiLoggingSanitizer;
 import com.healthlink.security.annotation.PhiAccess;
-import lombok.RequiredArgsConstructor;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.AfterReturning;
 import org.aspectj.lang.annotation.Aspect;
@@ -13,6 +12,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Instant;
 import java.util.Collection;
@@ -25,10 +26,19 @@ import java.util.UUID;
  */
 @Aspect
 @Component
-@RequiredArgsConstructor
 public class PhiAccessLoggingAspect {
 
     private final PhiAccessLogRepository repository;
+    private final TransactionTemplate transactionTemplate;
+    
+    public PhiAccessLoggingAspect(PhiAccessLogRepository repository, PlatformTransactionManager transactionManager) {
+        this.repository = repository;
+        // Create TransactionTemplate that uses a new transaction (not read-only)
+        TransactionTemplate template = new TransactionTemplate(transactionManager);
+        template.setPropagationBehavior(org.springframework.transaction.TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        template.setReadOnly(false);
+        this.transactionTemplate = template;
+    }
 
     @AfterReturning("@annotation(phiAccess)")
     public void logAccess(JoinPoint joinPoint, PhiAccess phiAccess) {
@@ -74,7 +84,12 @@ public class PhiAccessLoggingAspect {
             .requestId(requestId)
             .build();
         
-        repository.save(log);
+        // Save in a new transaction to avoid read-only transaction conflicts
+        // Use TransactionTemplate to execute in a new, writable transaction
+        transactionTemplate.executeWithoutResult(status -> {
+            repository.save(log);
+        });
+        
         // Also emit generic PHI access analytics event (non-PHI metadata only)
         if (analyticsEventService != null) {
             analyticsEventService.record(com.healthlink.analytics.AnalyticsEventType.PHI_ACCESS, username, entityId, phiAccess.reason());

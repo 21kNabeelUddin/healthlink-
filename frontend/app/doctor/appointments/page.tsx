@@ -134,9 +134,9 @@ export default function DoctorAppointmentsPage() {
           clinic.appointments.push(appointment);
         } else {
           // Clinic not found in our list - create a temporary entry for it
-          // Use 0 as temporary ID since appointment.clinicId is a string (UUID) but Clinic.id is number
+          // Use appointmentClinicId (UUID string) as the ID since Clinic.id is string
           clinicMap.set(appointmentClinicId, {
-            id: 0, // Temporary ID for clinics not in our list
+            id: appointmentClinicId, // Use the UUID from appointment
             name: appointment.clinicName || 'Unknown Clinic',
             address: appointment.clinicAddress || '',
             city: '',

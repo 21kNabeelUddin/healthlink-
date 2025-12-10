@@ -23,7 +23,7 @@ export default function MedicalHistoryPage() {
     if (user?.id) {
       loadHistories();
     }
-  }, [user, statusFilter]);
+  }, [user]);
 
   const loadHistories = async () => {
     if (!user?.id) return;
@@ -31,11 +31,8 @@ export default function MedicalHistoryPage() {
     setIsLoading(true);
     try {
       const data = await medicalRecordsApi.listForPatient(user.id.toString());
-      // Filter by status if needed
-      const filtered = statusFilter 
-        ? data.filter((record: any) => record.status === statusFilter)
-        : data;
-      setHistories(filtered || []);
+      // Don't filter here - let filteredHistories useMemo handle it
+      setHistories(data || []);
     } catch (error: any) {
       toast.error('Failed to load medical history');
       console.error('Medical history load error:', error);
@@ -58,12 +55,19 @@ export default function MedicalHistoryPage() {
 
   const filteredHistories = useMemo(() => {
     return histories.filter((record) => {
-      if (statusFilter && record.status !== statusFilter) return false;
+      if (statusFilter) {
+        // If filtering and record has no status, exclude it
+        if (!record.status) return false;
+        if (record.status !== statusFilter) return false;
+      }
       return true;
     });
   }, [histories, statusFilter]);
 
-  const getStatusClasses = (status: string) => {
+  const getStatusClasses = (status?: string) => {
+    if (!status) {
+      return 'bg-slate-100 text-slate-700 border-slate-200';
+    }
     switch (status) {
       case 'ACTIVE':
         return 'bg-red-100 text-red-800 border-red-200';
@@ -75,6 +79,17 @@ export default function MedicalHistoryPage() {
         return 'bg-blue-100 text-blue-800 border-blue-200';
       default:
         return 'bg-slate-100 text-slate-700 border-slate-200';
+    }
+  };
+
+  const formatDate = (dateValue: string | Date | null | undefined): string => {
+    if (!dateValue) return 'N/A';
+    try {
+      const date = new Date(dateValue);
+      if (isNaN(date.getTime())) return 'N/A';
+      return format(date, 'MMM dd, yyyy');
+    } catch (error) {
+      return 'N/A';
     }
   };
 
@@ -137,13 +152,15 @@ export default function MedicalHistoryPage() {
                   <Card key={history.id} className="p-5 shadow-sm hover:shadow-md transition-shadow">
                     <div className="flex flex-col gap-3">
                       <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="text-xl font-semibold text-slate-900">{history.condition}</h3>
-                        <Badge
-                          variant="outline"
-                          className={`${getStatusClasses(history.status)} text-xs`}
-                        >
-                          {history.status.replace('_', ' ')}
-                        </Badge>
+                        <h3 className="text-xl font-semibold text-slate-900">{history.condition || 'Untitled Record'}</h3>
+                        {history.status && (
+                          <Badge
+                            variant="outline"
+                            className={`${getStatusClasses(history.status)} text-xs`}
+                          >
+                            {history.status.replace('_', ' ')}
+                          </Badge>
+                        )}
                       </div>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-sm text-slate-700">
@@ -152,7 +169,7 @@ export default function MedicalHistoryPage() {
                           <div>
                             <p className="text-xs uppercase text-slate-400">Diagnosis Date</p>
                             <p className="font-semibold text-slate-900">
-                              {format(new Date(history.diagnosisDate), 'MMM dd, yyyy')}
+                              {formatDate(history.diagnosisDate)}
                             </p>
                           </div>
                         </div>
@@ -160,14 +177,14 @@ export default function MedicalHistoryPage() {
                           <User className="w-4 h-4 text-slate-400" />
                           <div>
                             <p className="text-xs uppercase text-slate-400">Doctor</p>
-                            <p className="font-semibold text-slate-900">{history.doctorName}</p>
+                            <p className="font-semibold text-slate-900">{history.doctorName || 'N/A'}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
                           <Building2 className="w-4 h-4 text-slate-400" />
                           <div>
                             <p className="text-xs uppercase text-slate-400">Hospital</p>
-                            <p className="font-semibold text-slate-900">{history.hospitalName}</p>
+                            <p className="font-semibold text-slate-900">{history.hospitalName || 'N/A'}</p>
                           </div>
                         </div>
                       </div>
@@ -175,15 +192,15 @@ export default function MedicalHistoryPage() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-slate-700">
                         <div>
                           <p className="font-semibold text-slate-900">Description</p>
-                          <p>{history.description}</p>
+                          <p>{history.description || 'No description provided'}</p>
                         </div>
                         <div>
                           <p className="font-semibold text-slate-900">Treatment</p>
-                          <p>{history.treatment}</p>
+                          <p>{history.treatment || 'No treatment information'}</p>
                         </div>
                         <div>
                           <p className="font-semibold text-slate-900">Medications</p>
-                          <p>{history.medications}</p>
+                          <p>{history.medications || 'No medications listed'}</p>
                         </div>
                       </div>
 
